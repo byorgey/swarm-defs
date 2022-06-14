@@ -197,12 +197,13 @@ def process_tree =
   num_trees <- count "tree";
   if (num_trees >= 2) { x2 (make "log"); x2 (make "branch predictor"); make "board" } {};
   num_boards <- count "board";
-  if (num_boards >= 29) { x6 (make "wooden gear"); make "boat"; x2 (make "box") } {};
+  if (num_boards >= 30) { x6 (make "wooden gear"); make "boat"; x2 (make "box"); make "seesaw" } {};
   giveall base "log";
   giveall base "branch predictor";
   giveall base "wooden gear";
   giveall base "boat";
-  giveall base "box"
+  giveall base "box";
+  giveall base "seesaw"
 end
 
 def process_bits =
