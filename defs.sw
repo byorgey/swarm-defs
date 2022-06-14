@@ -183,9 +183,32 @@ def mg = move; grab end
 def gt = give base "tree" end
 def gc = give base "copper ore" end
 
-def process_trees = x4 (make "log"); x4 (make "branch predictor"); x2 (make "board") end
+def plant_nursery : (cmd () -> cmd ()) -> cmd () = \rep.
+  while (fmap not (has "tree")) (wait 4);
+  rep (move; place "tree"; grab; return ());
+  tB; rep move
+end
+
+def leq : int -> int -> bool = \x. \y. (x == 0) || leq (x-1) (y-1) end
+
+def process_tree =
+  num_trees <- count "tree";
+  if (num_trees >= 2) { x2 (make "log"); x2 (make "branch predictor"); make "board" } {};
+  num_boards <- count "board";
+  if (num_boards >= 29) { x6 (make "wooden gear"); make "boat"; x2 (make "box") } {};
+  giveall base "log";
+  giveall base "branch predictor";
+  giveall base "wooden gear";
+  giveall base "boat";
+  giveall base "box"
+end
 
 // World-specific stuff
 
-def toLambda = tL; m15; tL; m5 end
-def fromLambda = tB; m5; tR; m15 end
+def harvestbits =
+  wait 3; tL; m32; m8;
+  harvestboxP right x16 x16 bithere;
+  tB; m32; m8;
+  giveall base "bit (0)";
+  giveall base "bit (1)";
+end
