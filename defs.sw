@@ -30,9 +30,48 @@ def m128 = m64;m64 end
 
 // Startup
 
+def scan1 =
+  m1; tR;
+  scan down; scan left; m1;
+  scan down; scan left; tR; m1;
+  scan down; scan left; m1;
+  scan down; scan left; tR; m1;
+  scan down; scan left; m1;
+  scan down; scan left; tR; m1;
+  scan down; scan left; m1;
+  scan down; scan left; tR; m1;
+  upload base;
+  tR; m1
+end
+
+def scan2 =
+  m2; tR;
+  scan left; m1;
+  scan left; m1;
+  scan left; tR; m1;
+  scan left; m1;
+  scan left; m1;
+  scan left; m1;
+  scan left; tR; m1;
+  scan left; m1;
+  scan left; m1;
+  scan left; m1;
+  scan left; tR; m1;
+  scan left; m1;
+  scan left; m1;
+  scan left; m1;
+  scan left; tR; m1;
+  scan left; m1;
+  tR; m1; m1;
+  upload base;
+end
+
 def startup =
+  build {scan1}; build {scan2};
   build {salvage};
+  wait 2;
   build {salvage; give base "plasma cutter"};
+  wait 3;
   install base "plasma cutter";
   salvage
 end
