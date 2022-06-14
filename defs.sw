@@ -189,8 +189,6 @@ def plant_nursery : (cmd () -> cmd ()) -> cmd () = \rep.
   tB; rep move
 end
 
-def leq : int -> int -> bool = \x. \y. (x == 0) || leq (x-1) (y-1) end
-
 def process_tree =
   num_trees <- count "tree";
   if (num_trees >= 2) { x2 (make "log"); x2 (make "branch predictor"); make "board" } {};
