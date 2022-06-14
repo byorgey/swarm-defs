@@ -205,6 +205,13 @@ def process_tree =
   giveall base "box"
 end
 
+def process_bits =
+  num_0 <- count "bit (0)";
+  num_1 <- count "bit (1)";
+  if (num_0 >= 10 && num_1 >= 10) { make "counter"; x2 (make "drill bit") } {};
+  giveall base "counter"; giveall base "drill bit"
+end
+
 // World-specific stuff
 
 def harvestbits =
