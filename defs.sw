@@ -157,9 +157,9 @@ def harvestline = \rep. \thing. harvestlineP rep (ishere thing) end
 def harvestboxP : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> cmd bool -> cmd () = \d. \rep1. \rep2. \pred.
   rep1 (
     harvestlineP rep2 pred;
-    turn d; move; turn d; turn d; turn d
+    turn d; move; x3 (turn d)
   );
-  turn d; turn d; turn d; rep1 move; turn d
+  x3 (turn d); rep1 move; turn d
 end
 def harvestbox : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> string -> cmd () = \d. \rep1. \rep2. \thing.
   harvestboxP d rep1 rep2 (ishere thing)
@@ -183,10 +183,14 @@ def mg = move; grab end
 def gt = give base "tree" end
 def gc = give base "copper ore" end
 
-def plant_nursery : (cmd () -> cmd ()) -> cmd () = \rep.
-  while (fmap not (has "tree")) (wait 4);
-  rep (move; place "tree"; grab; return ());
-  tB; rep move
+def plant_garden : string -> dir -> int -> int -> cmd () = \thing. \d. \rows. \cols.
+  while (fmap not (has thing)) (wait 4);
+  repeat rows (
+    repeat cols (move; place thing; grab; return ()); tB;
+    repeat cols move; tB;
+    turn d; move; x3 (turn d)
+  );
+  x3 (turn d); repeat rows move; turn d
 end
 
 def process_tree =
