@@ -154,12 +154,15 @@ def harvestlineP = \rep. \pred.
   tB; rep move; tB
 end
 def harvestline = \rep. \thing. harvestlineP rep (ishere thing) end
-def harvestbox : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> string -> cmd () = \d. \rep1. \rep2. \thing.
+def harvestboxP : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> cmd bool -> cmd () = \d. \rep1. \rep2. \pred.
   rep1 (
-    harvestline rep2 thing;
+    harvestlineP rep2 pred;
     turn d; move; turn d; turn d; turn d
   );
   turn d; turn d; turn d; rep1 move; turn d
+end
+def harvestbox : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> string -> cmd () = \d. \rep1. \rep2. \thing.
+  harvestboxP d rep1 rep2 (ishere thing)
 end
 
 def bithere = liftA2 or (ishere "bit (0)") (ishere "bit (1)") end
