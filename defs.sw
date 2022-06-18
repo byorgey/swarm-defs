@@ -159,9 +159,9 @@ def harvestline = \rep. \thing. harvestlineP rep (ishere thing) end
 def harvestboxP : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> cmd bool -> cmd () = \d. \rep1. \rep2. \pred.
   rep1 (
     harvestlineP rep2 pred;
-    turn d; move; turn d; turn d; turn d
+    turn d; move; x3 (turn d)
   );
-  turn d; turn d; turn d; rep1 move; turn d
+  x3 (turn d); rep1 move; turn d
 end
 def harvestbox : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> string -> cmd () = \d. \rep1. \rep2. \thing.
   harvestboxP d rep1 rep2 (ishere thing)
@@ -181,22 +181,38 @@ end
 
 def giveall : robot -> string -> cmd () = \r. \thing. while (has thing) (give r thing) end
 
-def plant_nursery : (cmd () -> cmd ()) -> cmd () = \rep.
-  while (fmap not (has "tree")) (wait 4);
-  rep (move; place "tree"; grab; return ());
-  tB; rep move
+def mg = move; grab end
+def gt = give base "tree" end
+def gc = give base "copper ore" end
+
+def plant_garden : string -> dir -> int -> int -> cmd () = \thing. \d. \rows. \cols.
+  while (fmap not (has thing)) (wait 4);
+  repeat rows (
+    repeat cols (move; place thing; grab; return ()); tB;
+    repeat cols move; tB;
+    turn d; move; x3 (turn d)
+  );
+  x3 (turn d); repeat rows move; turn d
 end
 
 def process_tree =
   num_trees <- count "tree";
   if (num_trees >= 2) { x2 (make "log"); x2 (make "branch predictor"); make "board" } {};
   num_boards <- count "board";
-  if (num_boards >= 29) { x6 (make "wooden gear"); make "boat"; x2 (make "box") } {};
+  if (num_boards >= 30) { x6 (make "wooden gear"); make "boat"; x2 (make "box"); make "seesaw" } {};
   giveall base "log";
   giveall base "branch predictor";
   giveall base "wooden gear";
   giveall base "boat";
-  giveall base "box"
+  giveall base "box";
+  giveall base "seesaw"
+end
+
+def process_bits =
+  num_0 <- count "bit (0)";
+  num_1 <- count "bit (1)";
+  if (num_0 >= 10 && num_1 >= 10) { make "counter"; x2 (make "drill bit") } {};
+  giveall base "counter"; giveall base "drill bit"
 end
 
 // World-specific stuff
