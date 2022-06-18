@@ -8,6 +8,8 @@ def tE = turn east end
 def tS = turn south end
 def tW = turn west end
 
+def mg = move; grab end
+
 def m1 = move end
 def m2 = move;m1 end
 def m3 = move;m2 end
@@ -179,17 +181,11 @@ end
 
 def giveall : robot -> string -> cmd () = \r. \thing. while (has thing) (give r thing) end
 
-def mg = move; grab end
-def gt = give base "tree" end
-def gc = give base "copper ore" end
-
 def plant_nursery : (cmd () -> cmd ()) -> cmd () = \rep.
   while (fmap not (has "tree")) (wait 4);
   rep (move; place "tree"; grab; return ());
   tB; rep move
 end
-
-def leq : int -> int -> bool = \x. \y. (x == 0) || leq (x-1) (y-1) end
 
 def process_tree =
   num_trees <- count "tree";
