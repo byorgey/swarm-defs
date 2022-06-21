@@ -110,6 +110,10 @@ def or = \x.\y. if x {x} {y} end
 
 def orC = \xC.\yC. x <- xC; y <- yC; return (or x y) end
 
+// Math
+
+def abs : int -> int = \x. if (x < 0) {-x} {x} end
+
 // Control
 
 def ifC : cmd bool -> {cmd a} -> {cmd a} -> cmd a = \test. \then. \else.
@@ -128,9 +132,27 @@ def while : cmd bool -> cmd a -> cmd () = \test. \body.
   ifC test {body ; while test body} {}
 end
 
+def waitWhile = \test. while test noop end
+
 def until = \test. while (fmap not test) end
 
+def waitUntil = \test. until test noop end
+
 def moveto = \thing. until (ishere thing) move end
+
+// Movement
+
+def moveBy : int -> int -> cmd () = \dx. \dy.
+  if (dx < 0) {tW} {tE}; repeat (abs dx) move;
+  if (dy < 0) {tS} {tN}; repeat (abs dy) move
+end
+
+def moveTo : int -> int -> cmd () = \x. \y.
+  loc <- whereami;
+  let dx = x - fst loc in
+  let dy = y - snd loc in
+  moveBy dx dy
+end
 
 // Harvesting/scanning
 
