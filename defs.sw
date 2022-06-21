@@ -217,6 +217,8 @@ def plant_garden : string -> dir -> int -> int -> cmd () = \thing. \d. \rows. \c
   x3 (turn d); repeat rows move; turn d
 end
 
+// Processing
+
 def process_tree =
   num_trees <- count "tree";
   if (num_trees >= 2) { x2 (make "log"); x2 (make "branch predictor"); make "board" } {};
@@ -235,6 +237,44 @@ def process_bits =
   num_1 <- count "bit (1)";
   if (num_0 >= 10 && num_1 >= 10) { make "counter"; x2 (make "drill bit") } {};
   giveall base "counter"; giveall base "drill bit"
+end
+
+// Pull-based manufacturing
+
+def request = \thing.
+  place "rock";
+  waitUntil (ishere thing);
+  grab;
+  waitUntil (ishere "rock");
+  grab;
+end
+
+def await_request = \thing. forever (
+    ifC (ishere "rock") {
+      until (has thing) (wait 16);
+      grab;
+      place thing;
+      waitWhile (ishere thing);
+      place "rock";
+      waitWhile (ishere "rock");
+    } {}
+  )
+end
+
+def process_trees = \r1. \r2. forever (
+  ifC (has "tree") {
+    make "log";
+    give r1 "log";
+    give r2 "branch"; give r2 "branch"
+  }
+  {}
+  )
+end
+
+def tree_factory =
+  tN; m1; log_depot <- build {await_request "log"};
+  tB; m1; tE; m1; branch_depot <- build {await_request "branch"}; tB; m1;
+  process_trees log_depot branch_depot
 end
 
 // World-specific stuff
