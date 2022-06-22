@@ -35,13 +35,13 @@ def m128 = m64;m64 end
 def scan1 =
   m1; tR;
   scan down; scan left; m1;
-  scan down; scan left; tR; m1;
+  scan down; scan left; scan forward; tR; m1;
   scan down; scan left; m1;
-  scan down; scan left; tR; m1;
+  scan down; scan left; scan forward; tR; m1;
   scan down; scan left; m1;
-  scan down; scan left; tR; m1;
+  scan down; scan left; scan forward; tR; m1;
   scan down; scan left; m1;
-  scan down; scan left; tR; m1;
+  scan down; scan left; scan forward; tR; m1;
   upload base;
   tR; m1
 end
@@ -73,9 +73,10 @@ def startup =
   build {salvage};
   wait 2;
   build {salvage; give base "plasma cutter"};
-  wait 3;
+  wait 16;
   install base "plasma cutter";
-  salvage
+  salvage;
+  wait 16; salvage; salvage
 end
 
 // Repetition
@@ -207,14 +208,24 @@ def mg = move; grab end
 def gt = give base "tree" end
 def gc = give base "copper ore" end
 
-def plant_garden : string -> dir -> int -> int -> cmd () = \thing. \d. \rows. \cols.
+def plant_garden : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> string -> cmd () = \d. \rows. \cols. \thing.
   while (fmap not (has thing)) (wait 4);
-  repeat rows (
-    repeat cols (move; place thing; grab; return ()); tB;
-    repeat cols move; tB;
+  rows (
+    cols (place thing; grab; move; return ()); tB;
+    cols move; tB;
     turn d; move; x3 (turn d)
   );
-  x3 (turn d); repeat rows move; turn d
+  x3 (turn d); rows move; turn d
+end
+
+def harvest : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> string -> robot -> cmd ()
+  = \d. \rows. \cols. \thing. \r.
+    forever (
+      harvestbox d rows cols thing;
+      tB; m1;
+      giveall r thing;
+      tB; m1
+    )
 end
 
 // Processing
@@ -241,25 +252,86 @@ end
 
 // Pull-based manufacturing
 
-def request = \thing.
-  place "rock";
+def get = \thing.
   waitUntil (ishere thing);
-  grab;
-  waitUntil (ishere "rock");
-  grab;
+  grab
 end
 
-def await_request = \thing. forever (
-    ifC (ishere "rock") {
-      until (has thing) (wait 16);
-      grab;
-      place thing;
-      waitWhile (ishere thing);
-      place "rock";
-      waitWhile (ishere "rock");
-    } {}
+def provide0 = \thing. forever (
+  waitWhile (ishere thing);
+  waitUntil (has thing);
+  place thing;
   )
 end
+
+// provide1, provide2, etc. need calculator + comparator
+
+def provide1 = \x. \y. \thing. \n. \ingr. \ix. \iy.
+  moveBy x y;
+  forever (
+    ifC (fmap not (has thing)) {
+      while (cur <- count thing; return (cur < 8)) (
+        moveBy (ix - x) (iy - y);
+        repeat n (get ingr);
+        moveBy (x - ix) (y - iy);
+        make thing
+      )
+    } {};
+    waitWhile (ishere thing);
+    place thing;
+  )
+end
+
+def provide2 : int -> int -> string -> int -> string -> int -> int
+                                    -> int -> string -> int -> int -> cmd ()
+  = \x. \y. \thing. \n1. \ingr1. \i1x. \i1y.
+                               \n2. \ingr2. \i2x. \i2y.
+  moveBy x y;
+  forever (
+    ifC (fmap not (has thing)) {
+      while (cur <- count thing; return (cur < 8)) (
+        moveBy (i1x - x) (i2y - y);
+        repeat n1 (get ingr1);
+        moveBy (i2x - i1x) (i2y - i1y);
+        repeat n2 (get ingr2);
+        moveBy (x - i2x) (y - i2y);
+        make thing
+      )
+    } {};
+    waitWhile (ishere thing);
+    place thing;
+  )
+end
+
+// Automated setup of standard 4x8 plantation + depot.
+// It will look like this:
+//
+//   >........
+//    ........
+//    ........
+//    ........
+//
+// where > is the location and orientation of a robot after executing
+// build {there}.  > will be the location of the depot.  To obtain
+// resources from the depot, go to its cell and execute 'get
+// <resource>'.
+//
+// Requirements:
+//   - branch predictor (2)
+//   - lambda (2)
+//   - strange loop (2)
+
+def plantation : string -> cmd () -> cmd () = \product. \there.
+  depot <- build {there; provide0 product};
+  harvester <- build {
+    wait 3; there; m1;
+    plant_garden right x4 x8 product;
+    harvest right x4 x8 product depot
+  };
+  give harvester product
+end
+
+// Trees have to be dealt with specially
 
 def process_trees = \r1. \r2. forever (
   ifC (has "tree") {
@@ -271,10 +343,12 @@ def process_trees = \r1. \r2. forever (
   )
 end
 
-def tree_factory =
-  tN; m1; log_depot <- build {await_request "log"};
-  tB; m1; tE; m1; branch_depot <- build {await_request "branch"}; tB; m1;
-  process_trees log_depot branch_depot
+// Make sure to have a workbench, branch predictors, strange loops first!
+// Be sure to save output!
+def build_tree_factory = \toloc.
+  log_depot <- build {toloc; m1; provide0 "log"};
+  branch_depot <- build {toloc; tB; m1; provide0 "branch"};
+  build {toloc; process_trees log_depot branch_depot}
 end
 
 // World-specific stuff
