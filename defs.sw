@@ -436,11 +436,11 @@ def harvestbox : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> string -> cm
 end
 
 // tend additionally requires strange loop
-// Usage example: tend "lambda" atNE m5 m9
+// Usage example: tend "lambda" (atNE m5 m9)
 
-def tend = \thing. \at. \x. \y.
+def tend = \thing. \at.
   forever {
-    at x y (until (ishere thing) {wait 16}; grab);
+    at (until (ishere thing) {wait 16}; grab);
     give base thing
   }
 end
