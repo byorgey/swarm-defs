@@ -97,6 +97,34 @@ def m62 = m31;m31 end
 def m63 = m1;m62 end
 def m64 = m32;m32 end
 
+// Doing things "under" transformations, i.e. conjugation
+
+// Under turns
+def uL = \c. tL; res <- c; tR; return res end
+def uR = \c. tR; res <- c; tL; return res end
+def uB = \c. tB; res <- c; tB; return res end
+
+// Under movement, e.g.  uM m5 c
+def uM = \m. \c. m; res <- c; tB; m; tB; return res end
+
+// Moving while keeping N orientation
+
+def mN = \m. m end
+def mS = uB end
+def mE = uR end
+def mW = uL end
+
+// Moving around corners while keeping N orientation
+
+def mNE = \x. \y. mN y; mE x end
+def mEN = \x. \y. mE x; mN y end
+def mNW = \x. \y. mN y; mW x end
+def mWN = \x. \y. mW x; mN y end
+def mSE = \x. \y. mS y; mE x end
+def mES = \x. \y. mE x; mS y end
+def mSW = \x. \y. mS y; mW x end
+def mWS = \x. \y. mW x; mS y end
+
 // Doing subcommands at relative locations.  e.g.  atS m25 (place "rock")
 // will place a rock at the location 25 units south of the robot's
 // starting location, and then return to the original location.
@@ -105,6 +133,10 @@ def m64 = m32;m32 end
 // Robot also faces N
 //   1. before executing the subcommand
 //   2. after returning the robot to the origin
+//
+// Note, these could be implemented more simply/transparently using uL, uR, uB, uM,
+// but that would result in redundant turning, so we just implement them
+// directly like this.
 
 def atN = \y. \c.     y;     res <- c; tB; y; tB; return res end
 def atS = \y. \c. tB; y; tB; res <- c;     y;     return res end
@@ -408,7 +440,7 @@ end
 
 def tend = \thing. \at. \x. \y.
   forever {
-    at (until (ishere thing) {wait 16}; grab) x y;
+    at x y (until (ishere thing) {wait 16}; grab);
     give base thing
   }
 end
@@ -448,6 +480,16 @@ def provide0 = \thing. forever {
   waitWhile (ishere thing);
   waitUntil (has thing);
   place thing;
+  }
+end
+
+def transport = \thing. \x1. \y1. \r. \x2. \y2.
+  moveByN x1 y1;
+  forever {
+    x8 (get thing);
+    moveByN (x2 - x1) (y2 - y1);
+    x8 (give r thing);
+    moveByN (x1 - x2) (y1 - y2)
   }
 end
 
