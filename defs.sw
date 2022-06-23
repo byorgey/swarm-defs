@@ -1,4 +1,8 @@
-// Turn and move abbreviations
+////////////////////////////////////////////////////////////
+// Various simple turning, moving, + misc abbreviations
+////////////////////////////////////////////////////////////
+
+// Turn abbreviations
 
 def tL = turn left end
 def tR = turn right end
@@ -8,8 +12,26 @@ def tE = turn east end
 def tS = turn south end
 def tW = turn west end
 
-def mg = move; grab end
+// Scan abbreviations
 
+def sF = scan forward end
+def sL = scan left end
+def sR = scan right end
+def sB = scan back end
+def sD = scan down end
+def sN = scan north end
+def sE = scan east end
+def sS = scan south end
+def sW = scan west end
+def sA = sL; sR; sF; sB; sD end
+
+// Salvage abbreviation
+
+def slv = salvage end
+
+// m0 - m64, without devices
+
+def m0 = noop end
 def m1 = move end
 def m2 = m1;m1 end
 def m3 = m1;m2 end
@@ -75,7 +97,78 @@ def m62 = m31;m31 end
 def m63 = m1;m62 end
 def m64 = m32;m32 end
 
+// Doing things at relative locations.  e.g.  atS m25 (place "rock")
+// will place a rock at the location 25 units south of the robot's
+// starting location, and then return to the original location.
+//
+// Robot faces N as both pre- and post-condition.
+
+def atN = \c. \y.     y; res <- c; tB; y; tB; return res end
+def atS = \c. \y. tB; y; res <- c; tB; y;     return res end
+def atE = \c. \x. tR; x; res <- c; tB; x; tR; return res end
+def atW = \c. \x. tL; x; res <- c; tB; x; tL; return res end
+
+// Going "around corners": e.g. NE goes north then east, but EN goes east
+// then north.  Note regardless of NE vs EN etc., the x distance
+// always comes first, then y distance.
+
+def atNE = \c. \x. \y.     y; tR; x; res <- c; tB; x; tL; y; tB; return res end
+def atEN = \c. \x. \y. tR; x; tL; y; res <- c; tB; y; tR; x; tR; return res end
+def atNW = \c. \x. \y.     y; tL; x; res <- c; tB; x; tR; y; tB; return res end
+def atWN = \c. \x. \y. tL; x; tR; y; res <- c; tB; y; tL; x; tL; return res end
+def atSE = \c. \x. \y. tB; y; tL; x; res <- c; tB; x; tR; y;     return res end
+def atES = \c. \x. \y. tR; x; tR; y; res <- c; tB; y; tL; x; tR; return res end
+def atSW = \c. \x. \y. tB; y; tR; x; res <- c; tB; x; tL; y;     return res end
+def atWS = \c. \x. \y. tL; x; tL; y; res <- c; tB; y; tR; x; tL; return res end
+
+// For convenience, versions of atXX for grabbing, salvaging, and
+// scanning specifically
+
+def grabN = atN grab end
+def grabS = atS grab end
+def grabE = atE grab end
+def grabW = atW grab end
+
+def grabNE = atNE grab end
+def grabEN = atEN grab end
+def grabNW = atNW grab end
+def grabWN = atWN grab end
+def grabSE = atSE grab end
+def grabES = atES grab end
+def grabSW = atSW grab end
+def grabWS = atWS grab end
+
+def slvN = atN salvage end
+def slvS = atS salvage end
+def slvE = atE salvage end
+def slvW = atW salvage end
+
+def slvNE = atNE salvage end
+def slvEN = atEN salvage end
+def slvNW = atNW salvage end
+def slvWN = atWN salvage end
+def slvSE = atSE salvage end
+def slvES = atES salvage end
+def slvSW = atSW salvage end
+def slvWS = atWS salvage end
+
+def scanN = atN sA end
+def scanS = atS sA end
+def scanE = atE sA end
+def scanW = atW sA end
+
+def scanNE = atNE sA end
+def scanEN = atEN sA end
+def scanNW = atNW sA end
+def scanWN = atWN sA end
+def scanSE = atSE sA end
+def scanES = atES sA end
+def scanSW = atSW sA end
+def scanWS = atWS sA end
+
+////////////////////////////////////////////////////////////
 // Startup
+////////////////////////////////////////////////////////////
 
 def scan1 =
   m1; tR;
@@ -124,8 +217,13 @@ def startup =
   wait 16; salvage; salvage
 end
 
-// Repetition
+////////////////////////////////////////////////////////////
+// Simple repetition
+////////////////////////////////////////////////////////////
 
+// Simple repetition using only lambda
+
+def x0 = \c. noop end
 def x1 = \c. c end
 def x2 = \c. c; c end
 def x3 = \c. c; x2 c end
@@ -191,26 +289,28 @@ def x62 = \c. x31 c; x31 c end
 def x63 = \c. c; x62 c end
 def x64 = \c. x32 c; x32 c end
 
+////////////////////////////////////////////////////////////
+// Utilities
+////////////////////////////////////////////////////////////
+
 // cmd monad
 
 def fmap : (a -> b) -> cmd a -> cmd b = \f. \x.
   a <- x; return (f a)
 end
+
 def liftA2 : (a -> b -> c) -> cmd a -> cmd b -> cmd c = \f.\x.\y.
   a <- x;
   b <- y;
   return (f a b)
 end
 
-// Logic
-
-def or = \x.\y. if x {x} {y} end
-
-def orC = \xC.\yC. x <- xC; y <- yC; return (or x y) end
-
-// Math
+// Math & logic
 
 def abs : int -> int = \x. if (x < 0) {-x} {x} end
+
+def or : bool -> bool -> bool = \x. \y. x || y end
+def and : bool -> bool -> bool = \x. \y. x && y end
 
 // Control
 
@@ -218,49 +318,38 @@ def ifC : cmd bool -> {cmd a} -> {cmd a} -> cmd a = \test. \then. \else.
   b <- test; if b then else
 end
 
-def forever : cmd a -> cmd b = \c.
-  c; forever c
+def forever : {cmd a} -> cmd b = \c.
+  force c; forever c
 end
 
-def repeat : int -> cmd a -> cmd () = \n. \c.
-  if (n == 0) {} {c ; repeat (n-1) c}
+def repeat : int -> {cmd a} -> cmd () = \n. \c.
+  if (n == 0) {} {force c ; repeat (n-1) c}
 end
 
-def while : cmd bool -> cmd a -> cmd () = \test. \body.
-  ifC test {body ; while test body} {}
+def while : cmd bool -> {cmd a} -> cmd () = \test. \body.
+  ifC test {force body ; while test body} {}
 end
 
-def waitWhile = \test. while test noop end
+def waitWhile = \test. while test {} end
 
 def until = \test. while (fmap not test) end
 
-def waitUntil = \test. until test noop end
+def waitUntil = \test. until test {} end
 
-def moveto = \thing. until (ishere thing) move end
+def moveTo = \thing. until (ishere thing) {move} end
 
+////////////////////////////////////////////////////////////
 // Movement
+////////////////////////////////////////////////////////////
 
-// Some movement commands.  Requires strange loop, calculator,
+// Some movement commands.  Require strange loop, calculator,
 // comparator.
-
-// Arbitrary orientation, requires compass.
-def moveBy : int -> int -> cmd () = \dx. \dy.
-  if (dx < 0) {tW} {tE}; repeat (abs dx) move;
-  if (dy < 0) {tS} {tN}; repeat (abs dy) move
-end
-
-def moveTo : int -> int -> cmd () = \x. \y.
-  loc <- whereami;
-  let dx = x - fst loc in
-  let dy = y - snd loc in
-  moveBy dx dy
-end
 
 // Versions that assume robot is facing N as pre/postcondition.
 // These do not require a compass.
 def moveByN : int -> int -> cmd () = \dx. \dy.
-  if (dy < 0) {tB} {}; repeat (abs dy) move; if (dy < 0) {tB} {};
-  if (dx < 0) {tL} {tR}; repeat (abs dx) move; if (dx < 0) {tR} {tL};
+  if (dy < 0) {tB} {}; repeat (abs dy) {move}; if (dy < 0) {tB} {};
+  if (dx < 0) {tL} {tR}; repeat (abs dx) {move}; if (dx < 0) {tR} {tL};
 end
 
 def moveToN : int -> int -> cmd () = \x. \y.
@@ -270,21 +359,24 @@ def moveToN : int -> int -> cmd () = \x. \y.
   moveByN dx dy
 end
 
-// Harvesting/scanning
-
-def scanAt = \to. \fro. \d.
-  to;
-  scan d;
-  fro;
-  upload base
+// Arbitrary orientation, requires compass.
+def moveBy : int -> int -> cmd () = \dx. \dy.
+  if (dx < 0) {tW} {tE}; repeat (abs dx) {move};
+  if (dy < 0) {tS} {tN}; repeat (abs dy) {move}
 end
 
-def fetch = \to. \fro.
-  to;
-  thing <- grab;
-  fro;
-  give base thing
+def moveTo : int -> int -> cmd () = \x. \y.
+  loc <- whereami;
+  let dx = x - fst loc in
+  let dy = y - snd loc in
+  moveBy dx dy
 end
+
+////////////////////////////////////////////////////////////
+// Harvesting + planting
+////////////////////////////////////////////////////////////
+
+// harvestline, harvestbox, and friends require only branch predictor + lambda.
 
 def harvestlineP = \rep. \pred.
   rep (
@@ -293,7 +385,9 @@ def harvestlineP = \rep. \pred.
   );
   tB; rep move; tB
 end
+
 def harvestline = \rep. \thing. harvestlineP rep (ishere thing) end
+
 def harvestboxP : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> cmd bool -> cmd () = \d. \rep1. \rep2. \pred.
   rep1 (
     harvestlineP rep2 pred;
@@ -301,30 +395,23 @@ def harvestboxP : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> cmd bool ->
   );
   x3 (turn d); rep1 move; turn d
 end
+
 def harvestbox : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> string -> cmd () = \d. \rep1. \rep2. \thing.
   harvestboxP d rep1 rep2 (ishere thing)
 end
 
-def bithere = liftA2 or (ishere "bit (0)") (ishere "bit (1)") end
+// tend additionally requires strange loop
+// Usage example: tend "lambda" atNE m5 m9
 
-def tend = \to. \fro. \thing.
-  forever (
-    to;
-    until (ishere thing) (wait 16);
-    grab;
-    fro;
+def tend = \thing. \at. \x. \y.
+  forever {
+    at (until (ishere thing) {wait 16}; grab) x y;
     give base thing
-  )
+  }
 end
 
-def giveall : robot -> string -> cmd () = \r. \thing. while (has thing) (give r thing) end
-
-def mg = move; grab end
-def gt = give base "tree" end
-def gc = give base "copper ore" end
-
 def plant_garden : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> string -> cmd () = \d. \rows. \cols. \thing.
-  while (fmap not (has thing)) (wait 4);
+  while (fmap not (has thing)) {wait 4};
   rows (
     cols (place thing; grab; move; return ()); tB;
     cols move; tB;
@@ -333,46 +420,50 @@ def plant_garden : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> string -> 
   x3 (turn d); rows move; turn d
 end
 
+def giveall : robot -> string -> cmd () = \r. \thing. while (has thing) {give r thing} end
+
 def harvest : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> string -> robot -> cmd ()
   = \d. \rows. \cols. \thing. \r.
-    forever (
+    forever {
       harvestbox d rows cols thing;
       tB; m1;
       giveall r thing;
       tB; m1
-    )
+    }
 end
 
+////////////////////////////////////////////////////////////
 // Pull-based manufacturing
+////////////////////////////////////////////////////////////
 
 def get = \thing.
   waitUntil (ishere thing);
   grab
 end
 
-def provide0 = \thing. forever (
+def provide0 = \thing. forever {
   waitWhile (ishere thing);
   waitUntil (has thing);
   place thing;
-  )
+  }
 end
 
 // provide1, provide2, etc. need calculator + comparator
 
 def provide1 = \x. \y. \thing. \n. \ingr. \ix. \iy.
   moveByN x y;
-  forever (
+  forever {
     ifC (fmap not (has thing)) {
-      while (cur <- count thing; return (cur < 8)) (
+      while (cur <- count thing; return (cur < 8)) {
         moveByN (ix - x) (iy - y);
-        repeat n (get ingr);
+        repeat n {get ingr};
         moveByN (x - ix) (y - iy);
         make thing
-      )
+      }
     } {};
     waitWhile (ishere thing);
     place thing;
-  )
+  }
 end
 
 def provide2 : int -> int -> string -> int -> string -> int -> int
@@ -380,20 +471,20 @@ def provide2 : int -> int -> string -> int -> string -> int -> int
   = \x. \y. \thing. \n1. \ingr1. \i1x. \i1y.
                                \n2. \ingr2. \i2x. \i2y.
   moveByN x y;
-  forever (
+  forever {
     ifC (fmap not (has thing)) {
-      while (cur <- count thing; return (cur < 8)) (
+      while (cur <- count thing; return (cur < 8)) {
         moveByN (i1x - x) (i2y - y);
-        repeat n1 (get ingr1);
+        repeat n1 {get ingr1};
         moveByN (i2x - i1x) (i2y - i1y);
-        repeat n2 (get ingr2);
+        repeat n2 {get ingr2};
         moveByN (x - i2x) (y - i2y);
         make thing
-      )
+      }
     } {};
     waitWhile (ishere thing);
     place thing;
-  )
+  }
 end
 
 // Automated setup of standard 4x8 plantation + depot.
@@ -438,12 +529,12 @@ def process_trees = \there.
   branch_depot <- build {there; tR; m2; provide0 "branch"};
   build {
     there;
-    forever (
+    forever {
       get "tree"; make "log";
       tR; m1; give log_depot "log";
       m1; x2 (give branch_depot "branch");
       tB; m2; tR
-    )
+    }
   }
 end
 
@@ -454,14 +545,4 @@ end
 //   - workbench
 def tree_plantation = \there.
   plantation "tree" there; process_trees there
-end
-
-// World-specific stuff
-
-def harvestbits =
-  wait 3; tL; m32; m8;
-  harvestboxP right x16 x16 bithere;
-  tB; m32; m8;
-  giveall base "bit (0)";
-  giveall base "bit (1)";
 end
