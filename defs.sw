@@ -97,74 +97,77 @@ def m62 = m31;m31 end
 def m63 = m1;m62 end
 def m64 = m32;m32 end
 
-// Doing things at relative locations.  e.g.  atS m25 (place "rock")
+// Doing subcommands at relative locations.  e.g.  atS m25 (place "rock")
 // will place a rock at the location 25 units south of the robot's
 // starting location, and then return to the original location.
 //
-// Robot faces N as both pre- and post-condition.
+// Robot is assumed to face N initially.  The subcommand must preserve the robot's direction.
+// Robot also faces N
+//   1. before executing the subcommand
+//   2. after returning the robot to the origin
 
-def atN = \c. \y.     y; res <- c; tB; y; tB; return res end
-def atS = \c. \y. tB; y; res <- c; tB; y;     return res end
-def atE = \c. \x. tR; x; res <- c; tB; x; tR; return res end
-def atW = \c. \x. tL; x; res <- c; tB; x; tL; return res end
+def atN = \y. \c.     y;     res <- c; tB; y; tB; return res end
+def atS = \y. \c. tB; y; tB; res <- c;     y;     return res end
+def atE = \x. \c. tR; x; tL; res <- c; tL; x; tR; return res end
+def atW = \x. \c. tL; x; tR; res <- c; tR; x; tL; return res end
 
 // Going "around corners": e.g. NE goes north then east, but EN goes east
 // then north.  Note regardless of NE vs EN etc., the x distance
 // always comes first, then y distance.
 
-def atNE = \c. \x. \y.     y; tR; x; res <- c; tB; x; tL; y; tB; return res end
-def atEN = \c. \x. \y. tR; x; tL; y; res <- c; tB; y; tR; x; tR; return res end
-def atNW = \c. \x. \y.     y; tL; x; res <- c; tB; x; tR; y; tB; return res end
-def atWN = \c. \x. \y. tL; x; tR; y; res <- c; tB; y; tL; x; tL; return res end
-def atSE = \c. \x. \y. tB; y; tL; x; res <- c; tB; x; tR; y;     return res end
-def atES = \c. \x. \y. tR; x; tR; y; res <- c; tB; y; tL; x; tR; return res end
-def atSW = \c. \x. \y. tB; y; tR; x; res <- c; tB; x; tL; y;     return res end
-def atWS = \c. \x. \y. tL; x; tL; y; res <- c; tB; y; tR; x; tL; return res end
+def atNE = \x. \y. \c.     y; tR; x; tL; res <- c; tL; x; tL; y; tB; return res end
+def atEN = \x. \y. \c. tR; x; tL; y;     res <- c; tB; y; tR; x; tR; return res end
+def atNW = \x. \y. \c.     y; tL; x; tR; res <- c; tR; x; tR; y; tB; return res end
+def atWN = \x. \y. \c. tL; x; tR; y;     res <- c; tB; y; tL; x; tL; return res end
+def atSE = \x. \y. \c. tB; y; tL; x; tL; res <- c; tL; x; tR; y;     return res end
+def atES = \x. \y. \c. tR; x; tR; y; tB; res <- c;     y; tL; x; tR; return res end
+def atSW = \x. \y. \c. tB; y; tR; x; tR; res <- c; tR; x; tL; y;     return res end
+def atWS = \x. \y. \c. tL; x; tL; y; tB; res <- c;     y; tR; x; tL; return res end
 
 // For convenience, versions of atXX for grabbing, salvaging, and
 // scanning specifically
 
-def grabN = atN grab end
-def grabS = atS grab end
-def grabE = atE grab end
-def grabW = atW grab end
+def grabN = \y. atN y grab end
+def grabS = \y. atS y grab end
+def grabE = \x. atE x grab end
+def grabW = \x. atW x grab end
 
-def grabNE = atNE grab end
-def grabEN = atEN grab end
-def grabNW = atNW grab end
-def grabWN = atWN grab end
-def grabSE = atSE grab end
-def grabES = atES grab end
-def grabSW = atSW grab end
-def grabWS = atWS grab end
+def grabNE = \x. \y. atNE x y grab end
+def grabEN = \x. \y. atEN x y grab end
+def grabNW = \x. \y. atNW x y grab end
+def grabWN = \x. \y. atWN x y grab end
+def grabSE = \x. \y. atSE x y grab end
+def grabES = \x. \y. atES x y grab end
+def grabSW = \x. \y. atSW x y grab end
+def grabWS = \x. \y. atWS x y grab end
 
-def slvN = atN salvage end
-def slvS = atS salvage end
-def slvE = atE salvage end
-def slvW = atW salvage end
+def slvN = \y. atN y salvage end
+def slvS = \y. atS y salvage end
+def slvE = \x. atE x salvage end
+def slvW = \x. atW x salvage end
 
-def slvNE = atNE salvage end
-def slvEN = atEN salvage end
-def slvNW = atNW salvage end
-def slvWN = atWN salvage end
-def slvSE = atSE salvage end
-def slvES = atES salvage end
-def slvSW = atSW salvage end
-def slvWS = atWS salvage end
+def slvNE = \x. \y. atNE x y salvage end
+def slvEN = \x. \y. atEN x y salvage end
+def slvNW = \x. \y. atNW x y salvage end
+def slvWN = \x. \y. atWN x y salvage end
+def slvSE = \x. \y. atSE x y salvage end
+def slvES = \x. \y. atES x y salvage end
+def slvSW = \x. \y. atSW x y salvage end
+def slvWS = \x. \y. atWS x y salvage end
 
-def scanN = atN sA end
-def scanS = atS sA end
-def scanE = atE sA end
-def scanW = atW sA end
+def scanN = \y. atN y sA end
+def scanS = \y. atS y sA end
+def scanE = \x. atE x sA end
+def scanW = \x. atW x sA end
 
-def scanNE = atNE sA end
-def scanEN = atEN sA end
-def scanNW = atNW sA end
-def scanWN = atWN sA end
-def scanSE = atSE sA end
-def scanES = atES sA end
-def scanSW = atSW sA end
-def scanWS = atWS sA end
+def scanNE = \x. \y. atNE x y sA end
+def scanEN = \x. \y. atEN x y sA end
+def scanNW = \x. \y. atNW x y sA end
+def scanWN = \x. \y. atWN x y sA end
+def scanSE = \x. \y. atSE x y sA end
+def scanES = \x. \y. atES x y sA end
+def scanSW = \x. \y. atSW x y sA end
+def scanWS = \x. \y. atWS x y sA end
 
 ////////////////////////////////////////////////////////////
 // Startup
