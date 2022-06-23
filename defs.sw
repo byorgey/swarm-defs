@@ -609,8 +609,8 @@ end
 //    ........
 //    ........
 //
-// where > is the location and orientation of a robot after executing
-// build {there}.  > will be the location of the depot.  To obtain
+// where > is the location and orientation of a robot under execution of 'there'.
+// > will be the location of the depot.  To obtain
 // resources from the depot, go to its cell and execute 'get
 // <resource>'.
 //
@@ -618,13 +618,21 @@ end
 //   - branch predictor (2)
 //   - lambda (2)
 //   - strange loop (2)
+//
+// example:
+//
+//   def atB0 = \c. atSW m2 m5 (uB c) end
+//   plantation "bit (0)" atB0
 
-def plantation : string -> cmd () -> cmd () = \product. \there.
-  depot <- build {there; provide0 product};
+def plantation : string -> (cmd () -> cmd ()) -> cmd () = \product. \there.
+  depot <- build {there (provide0 product)};
   harvester <- build {
-    wait 3; there; m1;
-    plant_garden right x4 x8 product;
-    harvest right x4 x8 product depot
+    wait 3;
+    there (
+      m1;
+      plant_garden right x4 x8 product;
+      harvest right x4 x8 product depot
+    )
   };
   give harvester product
 end
@@ -639,16 +647,17 @@ end
 //   - workbench
 
 def process_trees = \there.
-  log_depot <- build {there; tR; m1; provide0 "log"};
-  branch_depot <- build {there; tR; m2; provide0 "branch"};
+  log_depot <- build {there (tR; m1; provide0 "log")};
+  branch_depot <- build {there (tR; m2; provide0 "branch")};
   build {
-    there;
-    forever {
-      get "tree"; make "log";
-      tR; m1; give log_depot "log";
-      m1; x2 (give branch_depot "branch");
-      tB; m2; tR
-    }
+    there (
+      forever {
+        get "tree"; make "log";
+        tR; m1; give log_depot "log";
+        m1; x2 (give branch_depot "branch");
+        tB; m2; tR
+      }
+    )
   }
 end
 
