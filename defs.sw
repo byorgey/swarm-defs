@@ -407,6 +407,10 @@ def moveTo : int -> int -> cmd () = \x. \y.
   moveBy dx dy
 end
 
+// Moving + drilling.
+def tryDrill = ifC blocked { drill forward } {} end
+def push : cmd () = tryDrill; move end
+
 ////////////////////////////////////////////////////////////
 // Harvesting + planting
 ////////////////////////////////////////////////////////////
@@ -465,6 +469,14 @@ def harvest : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> string -> robot
       giveall r thing;
       tB; m1
     }
+end
+
+// Execute this *from* the depot, i.e.  atDepot (mine ...)
+def mine = \thing. \atMine. \r.
+  forever {
+    atMine (x16 (drill down));
+    giveall r thing
+  }
 end
 
 ////////////////////////////////////////////////////////////
