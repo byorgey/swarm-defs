@@ -505,7 +505,64 @@ def transport = \thing. \x1. \y1. \r. \x2. \y2.
   }
 end
 
-// provide1, provide2, etc. need calculator + comparator
+// Making specific things needed for bootstrapping
+
+def make_counter = \atB0. \atB1.
+  build {
+    atB0 (x8 (get "bit (0)"));
+    atB1 (x8 (get "bit (1)"));
+    make "counter"
+  }
+end
+
+def make_comparator = \atLog. \atCopper.
+  r <- build {
+    wait 3;
+    atLog (x3 (get "log"));
+    x2 (make "board");
+    x2 (make "wooden gear");
+    make "teeter-totter";
+    atCopper (get "copper ore");
+    make "copper wire";
+    make "comparator";
+    give parent "comparator"
+  };
+  give r "furnace"
+end
+
+def prep_provider = \atLog. \atBranch. \atCopper. \atB0. \atB1.
+  r <- build {
+    wait 5;
+    atLog (x3 (get "log"));
+    x2 (make "board");
+    x2 (make "wooden gear");
+    make "teeter-totter";
+    atCopper (get "copper ore");
+    make "copper wire";
+    make "comparator";
+    give parent "comparator";
+    atB0 (x16 (get "bit (0)"));
+    atB1 (x16 (get "bit (1)"));
+    x2 (make "counter"); make "calculator";
+    make "strange loop";
+    atBranch (x3 (get "branch"));
+    make "workbench";
+    make "branch predictor"
+  };
+  give r "furnace";
+  give r "solar panel";  // make this!
+  return r
+end
+
+// Generic producers
+
+// provide1, provide2, etc. need:
+//   - calculator
+//   - comparator
+//   - lambda
+//   - strange loop
+//   - workbench
+//   - branch predictor
 
 def provide1 = \x. \y. \thing. \n. \ingr. \ix. \iy.
   moveByN x y;
