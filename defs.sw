@@ -343,28 +343,6 @@ def harvest : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> string -> robot
     )
 end
 
-// Processing
-
-def process_tree =
-  num_trees <- count "tree";
-  if (num_trees >= 2) { x2 (make "log"); x2 (make "branch predictor"); make "board" } {};
-  num_boards <- count "board";
-  if (num_boards >= 30) { x6 (make "wooden gear"); make "boat"; x2 (make "box"); make "seesaw" } {};
-  giveall base "log";
-  giveall base "branch predictor";
-  giveall base "wooden gear";
-  giveall base "boat";
-  giveall base "box";
-  giveall base "seesaw"
-end
-
-def process_bits =
-  num_0 <- count "bit (0)";
-  num_1 <- count "bit (1)";
-  if (num_0 >= 10 && num_1 >= 10) { make "counter"; x2 (make "drill bit") } {};
-  giveall base "counter"; giveall base "drill bit"
-end
-
 // Pull-based manufacturing
 
 def get = \thing.
@@ -382,13 +360,13 @@ end
 // provide1, provide2, etc. need calculator + comparator
 
 def provide1 = \x. \y. \thing. \n. \ingr. \ix. \iy.
-  moveBy x y;
+  moveByN x y;
   forever (
     ifC (fmap not (has thing)) {
       while (cur <- count thing; return (cur < 8)) (
-        moveBy (ix - x) (iy - y);
+        moveByN (ix - x) (iy - y);
         repeat n (get ingr);
-        moveBy (x - ix) (y - iy);
+        moveByN (x - ix) (y - iy);
         make thing
       )
     } {};
@@ -401,15 +379,15 @@ def provide2 : int -> int -> string -> int -> string -> int -> int
                                     -> int -> string -> int -> int -> cmd ()
   = \x. \y. \thing. \n1. \ingr1. \i1x. \i1y.
                                \n2. \ingr2. \i2x. \i2y.
-  moveBy x y;
+  moveByN x y;
   forever (
     ifC (fmap not (has thing)) {
       while (cur <- count thing; return (cur < 8)) (
-        moveBy (i1x - x) (i2y - y);
+        moveByN (i1x - x) (i2y - y);
         repeat n1 (get ingr1);
-        moveBy (i2x - i1x) (i2y - i1y);
+        moveByN (i2x - i1x) (i2y - i1y);
         repeat n2 (get ingr2);
-        moveBy (x - i2x) (y - i2y);
+        moveByN (x - i2x) (y - i2y);
         make thing
       )
     } {};
@@ -446,24 +424,36 @@ def plantation : string -> cmd () -> cmd () = \product. \there.
   give harvester product
 end
 
-// Trees have to be dealt with specially
+// Trees have to be dealt with specially, because the recipe for processing
+// trees has two outputs.
+//
+// Requirements:
+//   - branch predictor (3)
+//   - lambda (3)
+//   - strange loop (3)
+//   - workbench
 
-def process_trees = \r1. \r2. forever (
-  ifC (has "tree") {
-    make "log";
-    give r1 "log";
-    give r2 "branch"; give r2 "branch"
+def process_trees = \there.
+  log_depot <- build {there; tR; m1; provide0 "log"};
+  branch_depot <- build {there; tR; m2; provide0 "branch"};
+  build {
+    there;
+    forever (
+      get "tree"; make "log";
+      tR; m1; give log_depot "log";
+      m1; x2 (give branch_depot "branch");
+      tB; m2; tR
+    )
   }
-  {}
-  )
 end
 
-// Make sure to have a workbench, branch predictors, strange loops first!
-// Be sure to save output!
-def build_tree_factory = \toloc.
-  log_depot <- build {toloc; m1; provide0 "log"};
-  branch_depot <- build {toloc; tB; m1; provide0 "branch"};
-  build {toloc; process_trees log_depot branch_depot}
+// Requirements:
+//   - branch predictor (5)
+//   - lambda (5)
+//   - strange loop (5)
+//   - workbench
+def tree_plantation = \there.
+  plantation "tree" there; process_trees there
 end
 
 // World-specific stuff
