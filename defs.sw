@@ -240,6 +240,10 @@ def moveto = \thing. until (ishere thing) move end
 
 // Movement
 
+// Some movement commands.  Requires strange loop, calculator,
+// comparator.
+
+// Arbitrary orientation, requires compass.
 def moveBy : int -> int -> cmd () = \dx. \dy.
   if (dx < 0) {tW} {tE}; repeat (abs dx) move;
   if (dy < 0) {tS} {tN}; repeat (abs dy) move
@@ -250,6 +254,20 @@ def moveTo : int -> int -> cmd () = \x. \y.
   let dx = x - fst loc in
   let dy = y - snd loc in
   moveBy dx dy
+end
+
+// Versions that assume robot is facing N as pre/postcondition.
+// These do not require a compass.
+def moveByN : int -> int -> cmd () = \dx. \dy.
+  if (dy < 0) {tB} {}; repeat (abs dy) move; if (dy < 0) {tB} {};
+  if (dx < 0) {tL} {tR}; repeat (abs dx) move; if (dx < 0) {tR} {tL};
+end
+
+def moveToN : int -> int -> cmd () = \x. \y.
+  loc <- whereami;
+  let dx = x - fst loc in
+  let dy = y - snd loc in
+  moveByN dx dy
 end
 
 // Harvesting/scanning
