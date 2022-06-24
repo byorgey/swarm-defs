@@ -548,12 +548,32 @@ def prep_provider = \atLog. \atBranch. \atCopper. \atB0. \atB1.
     atCopper (get "copper ore");
     make "copper wire";
     make "comparator";
-    give parent "comparator";
     atB0 (x16 (get "bit (0)"));
     atB1 (x16 (get "bit (1)"));
     x2 (make "counter"); make "calculator";
     make "strange loop";
-    atBranch (x3 (get "branch"));
+    atBranch (x4 (get "branch"));
+    make "workbench";
+    make "branch predictor"
+  };
+  give r "furnace";
+  give r "solar panel";  // make this!
+  return r
+end
+
+def prep_provider_C = \atLog. \atBranch. \atCopper. \atCounter.
+  r <- build {
+    wait 5;
+    atLog (x3 (get "log"));
+    x2 (make "board");
+    x2 (make "wooden gear");
+    make "teeter-totter";
+    atCopper (get "copper ore");
+    make "copper wire";
+    make "comparator";
+    atCounter (x2 (get "counter")); make "calculator";
+    make "strange loop";
+    atBranch (x4 (get "branch"));
     make "workbench";
     make "branch predictor"
   };
@@ -677,3 +697,15 @@ end
 def tree_plantation = \there.
   plantation "tree" there; process_trees there
 end
+
+////////////////////////////////////////////////////////////
+// Utilities + specific steps for speedrun strategy
+////////////////////////////////////////////////////////////
+
+def makeBP = make "branch"; make "branch predictor" end
+def processTrees = \n.
+  n (make "log");
+  x6 (make "branch predictor");
+  x3 (make "board"; make "workbench")
+end
+
