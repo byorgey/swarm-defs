@@ -411,6 +411,14 @@ end
 def tryDrill = ifC blocked { drill forward } {} end
 def push : cmd () = tryDrill; move end
 
+def drillbox = \d. \rep1. \rep2.
+  rep1 (
+    rep2 push; tB; rep2 move; tB;
+    turn d; push; x3 (turn d)
+  );
+  x3 (turn d); rep1 move; turn d
+end
+
 ////////////////////////////////////////////////////////////
 // Harvesting + planting
 ////////////////////////////////////////////////////////////
