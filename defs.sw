@@ -365,11 +365,11 @@ def while : cmd bool -> {cmd a} -> cmd () = \test. \body.
   ifC test {force body ; while test body} {}
 end
 
-def waitWhile = \test. while test {} end
+def waitWhile = \test. while test {wait 1} end
 
 def until = \test. while (fmap not test) end
 
-def waitUntil = \test. until test {} end
+def waitUntil = \test. until test {wait 1} end
 
 def moveTo = \thing. until (ishere thing) {move} end
 
