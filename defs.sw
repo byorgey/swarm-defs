@@ -714,9 +714,10 @@ end
 ////////////////////////////////////////////////////////////
 
 def makeBP = make "branch"; make "branch predictor" end
-def processTrees = \n.
+def first_trees = \n.
   n (make "log");
-  x6 (make "branch predictor");
+  x7 (make "branch predictor");
+  x7 (make "logger");
   x3 (make "board"; make "workbench")
 end
 
