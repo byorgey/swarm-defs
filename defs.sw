@@ -423,11 +423,11 @@ end
 // Harvesting + planting
 ////////////////////////////////////////////////////////////
 
-// harvestline, harvestbox, and friends require only branch predictor + lambda.
+// harvestline, harvestbox, and friends require only branch predictor + lambda + harvester.
 
 def harvestlineP = \rep. \pred.
   rep (
-    ifC pred {grab; return ()} {};
+    ifC pred {harvest; return ()} {};
     move
   );
   tB; rep move; tB
@@ -452,7 +452,7 @@ end
 
 def tend = \thing. \at.
   forever {
-    at (until (ishere thing) {wait 16}; grab);
+    at (until (ishere thing) {wait 16}; harvest);
     give base thing
   }
 end
@@ -469,8 +469,9 @@ end
 
 def giveall : robot -> string -> cmd () = \r. \thing. while (has thing) {give r thing} end
 
-def harvest : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> string -> robot -> cmd ()
+def tendbox : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> string -> robot -> cmd ()
   = \d. \rows. \cols. \thing. \r.
+    log ("harvest " ++ thing);
     forever {
       harvestbox d rows cols thing;
       tB; m1;
@@ -496,10 +497,13 @@ def get = \thing.
   grab
 end
 
-def provide0 = \thing. forever {
-  waitWhile (ishere thing);
-  waitUntil (has thing);
-  place thing;
+def provide0 = \thing.
+  log ("provide0 " ++ thing);
+  setname (thing ++ " depot");
+  forever {
+    waitWhile (ishere thing);
+    waitUntil (has thing);
+    place thing;
   }
 end
 
@@ -593,6 +597,7 @@ end
 //   - branch predictor
 
 def provide1 = \x. \y. \thing. \n. \ingr. \ix. \iy.
+  setname (thing ++ " provider");
   moveByN x y;
   forever {
     ifC (fmap not (has thing)) {
@@ -612,6 +617,7 @@ def provide2 : int -> int -> string -> int -> string -> int -> int
                                     -> int -> string -> int -> int -> cmd ()
   = \x. \y. \thing. \n1. \ingr1. \i1x. \i1y.
                                \n2. \ingr2. \i2x. \i2y.
+  setname (thing ++ " provider");
   moveByN x y;
   forever {
     ifC (fmap not (has thing)) {
@@ -646,6 +652,7 @@ end
 //   - branch predictor (2)
 //   - lambda (2)
 //   - strange loop (2)
+//   - logger (2)   -- or whatever is needed for ++
 //
 // example:
 //
@@ -655,11 +662,12 @@ end
 def plantation : string -> (cmd () -> cmd ()) -> cmd () = \product. \there.
   depot <- build {there (provide0 product)};
   harvester <- build {
+    setname (product ++ " harvester");
     wait 3;
     there (
       m1;
       plant_garden right x4 x8 product;
-      harvest right x4 x8 product depot
+      tendbox right x4 x8 product depot
     )
   };
   give harvester product
@@ -672,12 +680,15 @@ end
 //   - branch predictor (3)
 //   - lambda (3)
 //   - strange loop (3)
+//   - logger (3)
 //   - workbench
 
 def process_trees = \there.
   log_depot <- build {there (tR; m1; provide0 "log")};
   branch_depot <- build {there (tR; m2; provide0 "branch")};
   build {
+    setname "tree processor";
+    log ("process trees");
     there (
       forever {
         get "tree"; make "log";
