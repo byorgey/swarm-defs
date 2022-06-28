@@ -156,7 +156,7 @@ def atES = \x. \y. \c. tR; x; tR; y; tB; res <- c;     y; tL; x; tR; return res 
 def atSW = \x. \y. \c. tB; y; tR; x; tR; res <- c; tR; x; tL; y;     return res end
 def atWS = \x. \y. \c. tL; x; tL; y; tB; res <- c;     y; tR; x; tL; return res end
 
-// For convenience, versions of atXX for grabbing, salvaging, and
+// For convenience, versions of atXX for grabbing, harvesting, salvaging, and
 // scanning specifically
 
 def grabN = \y. atN y grab end
@@ -172,6 +172,20 @@ def grabSE = \x. \y. atSE x y grab end
 def grabES = \x. \y. atES x y grab end
 def grabSW = \x. \y. atSW x y grab end
 def grabWS = \x. \y. atWS x y grab end
+
+def hrvN = \y. atN y harvest end
+def hrvS = \y. atS y harvest end
+def hrvE = \x. atE x harvest end
+def hrvW = \x. atW x harvest end
+
+def hrvNE = \x. \y. atNE x y harvest end
+def hrvEN = \x. \y. atEN x y harvest end
+def hrvNW = \x. \y. atNW x y harvest end
+def hrvWN = \x. \y. atWN x y harvest end
+def hrvSE = \x. \y. atSE x y harvest end
+def hrvES = \x. \y. atES x y harvest end
+def hrvSW = \x. \y. atSW x y harvest end
+def hrvWS = \x. \y. atWS x y harvest end
 
 def slvN = \y. atN y salvage end
 def slvS = \y. atS y salvage end
@@ -477,6 +491,7 @@ def giveall : robot -> string -> cmd () = \r. \thing. while (has thing) {give r 
 
 def tendbox : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> string -> robot -> cmd ()
   = \d. \rows. \cols. \thing. \r.
+    log ("harvest " ++ thing);
     forever {
       harvestbox d rows cols thing;
       tB; m1;
@@ -503,6 +518,7 @@ def get = \thing.
 end
 
 def provide0 = \thing.
+  log ("provide0 " ++ thing);
   setname (thing ++ " depot");
   forever {
     waitWhile (ishere thing);
@@ -696,6 +712,7 @@ end
 //   - branch predictor (3)
 //   - lambda (3)
 //   - strange loop (3)
+//   - logger (3)
 //   - workbench
 
 def process_trees = \there.
@@ -703,6 +720,7 @@ def process_trees = \there.
   branch_depot <- build {there (tR; m2; provide0 "branch")};
   build {
     setname "tree processor";
+    log ("process trees");
     there (
       forever {
         get "tree"; make "log";
