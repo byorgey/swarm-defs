@@ -437,9 +437,9 @@ end
 // Harvesting + planting
 ////////////////////////////////////////////////////////////
 
-// harvestline, harvestbox, and friends require only branch predictor + lambda + harvester.
+// harvestline, harvestbox, and friends require only branch predictor + lambda + (e.g. harvester).
 
-def harvestlineP = \rep. \pred. \act.
+def dolineP = \act. \rep. \pred.
   rep (
     ifC pred {act; return ()} {};
     move
@@ -447,24 +447,30 @@ def harvestlineP = \rep. \pred. \act.
   tB; rep move; tB
 end
 
-def harvestline = \rep. \thing. harvestlineP rep (ishere thing) harvest end
+def harvestline = \rep. \thing. dolineP harvest rep (ishere thing) end
 
-def grabline = \rep. \thing. harvestlineP rep (ishere thing) grab end
+def grabline = \rep. \thing. dolineP grab rep (ishere thing) end
 
-def harvestboxP : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> cmd bool -> cmd string -> cmd () = \d. \rep1. \rep2. \pred. \act.
+def drillline = \rep. dolineP (drill forward) rep blocked end
+
+def doboxP : cmd a -> dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> cmd bool -> cmd () = \act. \d. \rep1. \rep2. \pred.
   rep1 (
-    harvestlineP rep2 pred act;
+    dolineP act rep2 pred;
     turn d; move; x3 (turn d)
   );
   x3 (turn d); rep1 move; turn d
 end
 
 def harvestbox : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> string -> cmd () = \d. \rep1. \rep2. \thing.
-  harvestboxP d rep1 rep2 (ishere thing) harvest
+  doboxP harvest d rep1 rep2 (ishere thing)
 end
 
 def grabbox : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> string -> cmd () = \d. \rep1. \rep2. \thing.
-  harvestboxP d rep1 rep2 (ishere thing) grab
+  doboxP grab d rep1 rep2 (ishere thing)
+end
+
+def drillbox = \d. \rep1. \rep2.
+  doboxP (drill forward) d rep1 rep2 blocked
 end
 
 // tend additionally requires strange loop
@@ -478,9 +484,8 @@ def tend = \thing. \at.
 end
 
 def plant_garden : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> string -> cmd () = \d. \rows. \cols. \thing.
-  while (fmap not (has thing)) {wait 4};
   rows (
-    cols (place thing; grab; move; return ()); tB;
+    cols (place thing; harvest; move; return ()); tB;
     cols move; tB;
     turn d; move; x3 (turn d)
   );
@@ -502,6 +507,7 @@ end
 
 // Execute this *from* the depot, i.e.  atDepot (mine ...)
 def mine = \thing. \atMine. \r.
+  setname (thing ++ " miner");
   forever {
     atMine (x16 (drill down));
     giveall r thing
@@ -518,7 +524,6 @@ def get = \thing.
 end
 
 def provide0 = \thing.
-  log ("provide0 " ++ thing);
   setname (thing ++ " depot");
   forever {
     waitWhile (ishere thing);
@@ -683,7 +688,7 @@ def plantation : string -> (cmd () -> cmd ()) -> cmd () = \product. \there.
   depot <- build {there (provide0 product)};
   harvester <- build {
     setname (product ++ " harvester");
-    wait 3;
+    while (fmap not (has thing)) {wait 4};
     there (
       m1;
       plant_garden right x4 x8 product;
@@ -720,7 +725,6 @@ def process_trees = \there.
   branch_depot <- build {there (tR; m2; provide0 "branch")};
   build {
     setname "tree processor";
-    log ("process trees");
     there (
       forever {
         get "tree"; make "log";
@@ -763,3 +767,9 @@ def next_trees = \n.
   x3 (make "board"; make "workbench")
 end
 
+def make_drill =
+  make "box";
+  x32 (make "wooden gear");
+  make "small motor";
+  make "drill"
+end
