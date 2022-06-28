@@ -477,7 +477,6 @@ def giveall : robot -> string -> cmd () = \r. \thing. while (has thing) {give r 
 
 def tendbox : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> string -> robot -> cmd ()
   = \d. \rows. \cols. \thing. \r.
-    log ("harvest " ++ thing);
     forever {
       harvestbox d rows cols thing;
       tB; m1;
@@ -504,7 +503,6 @@ def get = \thing.
 end
 
 def provide0 = \thing.
-  log ("provide0 " ++ thing);
   setname (thing ++ " depot");
   forever {
     waitWhile (ishere thing);
@@ -686,7 +684,6 @@ end
 //   - branch predictor (3)
 //   - lambda (3)
 //   - strange loop (3)
-//   - logger (3)
 //   - workbench
 
 def process_trees = \there.
@@ -694,7 +691,6 @@ def process_trees = \there.
   branch_depot <- build {there (tR; m2; provide0 "branch")};
   build {
     setname "tree processor";
-    log ("process trees");
     there (
       forever {
         get "tree"; make "log";
