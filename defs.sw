@@ -425,26 +425,32 @@ end
 
 // harvestline, harvestbox, and friends require only branch predictor + lambda + harvester.
 
-def harvestlineP = \rep. \pred.
+def harvestlineP = \rep. \pred. \act.
   rep (
-    ifC pred {harvest; return ()} {};
+    ifC pred {act; return ()} {};
     move
   );
   tB; rep move; tB
 end
 
-def harvestline = \rep. \thing. harvestlineP rep (ishere thing) end
+def harvestline = \rep. \thing. harvestlineP rep (ishere thing) harvest end
 
-def harvestboxP : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> cmd bool -> cmd () = \d. \rep1. \rep2. \pred.
+def grabline = \rep. \thing. harvestlineP rep (ishere thing) grab end
+
+def harvestboxP : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> cmd bool -> cmd string -> cmd () = \d. \rep1. \rep2. \pred. \act.
   rep1 (
-    harvestlineP rep2 pred;
+    harvestlineP rep2 pred act;
     turn d; move; x3 (turn d)
   );
   x3 (turn d); rep1 move; turn d
 end
 
 def harvestbox : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> string -> cmd () = \d. \rep1. \rep2. \thing.
-  harvestboxP d rep1 rep2 (ishere thing)
+  harvestboxP d rep1 rep2 (ishere thing) harvest
+end
+
+def grabbox : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> string -> cmd () = \d. \rep1. \rep2. \thing.
+  harvestboxP d rep1 rep2 (ishere thing) grab
 end
 
 // tend additionally requires strange loop
