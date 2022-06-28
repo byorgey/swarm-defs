@@ -688,7 +688,7 @@ def plantation : string -> (cmd () -> cmd ()) -> cmd () = \product. \there.
   depot <- build {there (provide0 product)};
   harvester <- build {
     setname (product ++ " harvester");
-    while (fmap not (has thing)) {wait 4};
+    while (fmap not (has product)) {wait 4};
     there (
       m1;
       plant_garden right x4 x8 product;
