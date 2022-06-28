@@ -727,11 +727,21 @@ end
 // Utilities + specific steps for speedrun strategy
 ////////////////////////////////////////////////////////////
 
-def makeBP = make "branch"; make "branch predictor" end
-def first_trees = \n.
+def make_harvester =
+  x3 (make "log");
+  x3 (make "board");
+  make "box";
+  x2 (make "wooden gear");
+  make "harvester"
+end
+
+def makeBP = make "branch predictor" end
+
+def first_3_trees = make_harvester; makeBP end
+
+def next_trees = \n.
   n (make "log");
   x7 (make "branch predictor");
-  x7 (make "logger");
   x3 (make "board"; make "workbench")
 end
 
