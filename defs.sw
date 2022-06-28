@@ -677,6 +677,18 @@ def plantation : string -> (cmd () -> cmd ()) -> cmd () = \product. \there.
   give harvester product
 end
 
+def natural_plantation : string -> (cmd () -> cmd ()) -> cmd () = \product. \there.
+  depot <- build {there (provide0 product)};
+  build {
+    setname (product ++ " harvester");
+    there (
+      m1;
+      tendbox right x4 x8 product depot
+    )
+  };
+  return ()
+end
+
 // Trees have to be dealt with specially, because the recipe for processing
 // trees has two outputs.
 //
