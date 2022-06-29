@@ -807,3 +807,52 @@ def make_drill =
   make "small motor";
   make "drill"
 end
+
+// Next things to do:
+
+// - Redo providerN to take 'atFoo' style arguments, use pairs, etc?
+//    teeterTotter = ("teeter-totter", atTeeterTotter)
+//    woodenGear = ("wooden gear", atWoodenGear) etc.
+//    provide2 teeterTotter (2, woodenGear) (1, board)
+
+// - Function to automatically set up a grid of basic providers
+
+// def provide2' = \buffer. \product. \ingr1c. \ingr2c.
+//   let productName = fst product in
+//   let atProduct   = snd product in
+//   let n1          = fst ingr1c in
+//   let ingr1       = snd ingr1c in
+//   let ingr1Name   = fst ingr1 in
+//   let atIngr1     = snd ingr1 in
+//   let n2          = fst ingr2c in
+//   let ingr2       = snd ingr2c in
+//   let ingr2Name   = fst ingr2 in
+//   let atIngr2     = snd ingr2 in
+//   setname (productName ++ " provider");
+//   forever {
+//     atProduct (
+//       while (has productName) {
+//         waitWhile (ishere productName);
+//         place productName
+//       }
+//     );
+//     atIngr1 (repeat (buffer*n1) {get ingr1Name});
+//     atIngr2 (repeat (buffer*n2) {get ingr2Name});
+//     repeat buffer {make productName};
+//   }
+// end
+
+def provide2' = \buffer. \product. \ingr1. \ingr2.
+  setname (fst product ++ " provider");
+  forever {
+    snd product (
+      while (has (fst product)) {
+        waitWhile (ishere (fst product));
+        place (fst product)
+      }
+    );
+    snd (snd ingr1) (repeat (buffer * fst ingr1) {get (fst (snd ingr1))});
+    snd (snd ingr2) (repeat (buffer * fst ingr2) {get (fst (snd ingr2))});
+    repeat buffer {make (fst product)};
+  }
+end
