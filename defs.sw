@@ -387,6 +387,10 @@ def waitUntil = \test. until test {wait 1} end
 
 def moveTo = \thing. until (ishere thing) {move} end
 
+def waitFor = \thing.
+  while (fmap not (has thing)) {wait 4}
+end
+
 ////////////////////////////////////////////////////////////
 // Movement
 ////////////////////////////////////////////////////////////
@@ -570,7 +574,8 @@ end
 def prep_provider = \atLog. \atBranch. \atCopper. \atB0. \atB1.
   r <- build {
     wait 5;
-    atLog (x3 (get "log"));
+    atLog (x4 (get "log"));
+    make "logger";
     x2 (make "board");
     x2 (make "wooden gear");
     make "teeter-totter";
@@ -593,7 +598,8 @@ end
 def prep_provider_C = \atLog. \atBranch. \atCopper. \atCounter.
   r <- build {
     wait 5;
-    atLog (x3 (get "log"));
+    atLog (x4 (get "log"));
+    make "logger";
     x2 (make "board");
     x2 (make "wooden gear");
     make "teeter-totter";
@@ -647,7 +653,7 @@ def provide2 : int -> int -> string -> int -> string -> int -> int
   forever {
     ifC (fmap not (has thing)) {
       while (cur <- count thing; return (cur < 8)) {
-        moveByN (i1x - x) (i2y - y);
+        moveByN (i1x - x) (i1y - y);
         repeat n1 {get ingr1};
         moveByN (i2x - i1x) (i2y - i1y);
         repeat n2 {get ingr2};
@@ -678,6 +684,7 @@ end
 //   - lambda (2)
 //   - strange loop (2)
 //   - logger (2)   -- or whatever is needed for ++
+//   - harvester
 //
 // example:
 //
@@ -688,7 +695,7 @@ def plantation : string -> (cmd () -> cmd ()) -> cmd () = \product. \there.
   depot <- build {there (provide0 product)};
   harvester <- build {
     setname (product ++ " harvester");
-    while (fmap not (has product)) {wait 4};
+    waitFor product;
     there (
       m1;
       plant_garden right x4 x8 product;
@@ -740,7 +747,9 @@ end
 //   - branch predictor (5)
 //   - lambda (5)
 //   - strange loop (5)
+//   - logger (5)
 //   - workbench
+//   - harvester
 def tree_plantation = \there.
   plantation "tree" there; process_trees there
 end
