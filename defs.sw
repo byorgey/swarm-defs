@@ -526,14 +526,6 @@ def get = \thing.
   grab
 end
 
-def provide0 = \thing.
-  setname (thing ++ " depot");
-  forever {
-    waitWhile (ishere thing);
-    waitUntil (has thing);
-    place thing;
-  }
-end
 
 def transport = \thing. \x1. \y1. \r. \x2. \y2.
   moveByN x1 y1;
@@ -627,66 +619,43 @@ end
 //   - branch predictor
 //   - logger
 
-def provide1 = \x. \y. \thing. \n. \ingr. \ix. \iy.
-  setname (thing ++ " provider");
-  moveByN x y;
+def provide0 = \product.
+  setname (fst product ++ " depot");
+  snd product (
+    forever {
+      waitWhile (ishere (fst product));
+      waitUntil (has (fst product));
+      place (fst product);
+    }
+  )
+end
+
+def provide1 = \buffer. \product. \ingr1.
+  setname (fst product ++ " provider");
   forever {
-    ifC (fmap not (has thing)) {
-      while (cur <- count thing; return (cur < 8)) {
-        moveByN (ix - x) (iy - y);
-        repeat n {get ingr};
-        moveByN (x - ix) (y - iy);
-        make thing
+    snd product (
+      while (has (fst product)) {
+        waitWhile (ishere (fst product));
+        place (fst product)
       }
-    } {};
-    waitWhile (ishere thing);
-    place thing;
+    );
+    snd (snd ingr1) (repeat (buffer * fst ingr1) {get (fst (snd ingr1))});
+    repeat buffer {make (fst product)};
   }
 end
 
-def provide2 : int -> int -> string -> int -> string -> int -> int
-                                    -> int -> string -> int -> int -> cmd ()
-  = \x. \y. \thing. \n1. \ingr1. \i1x. \i1y.
-                               \n2. \ingr2. \i2x. \i2y.
-  setname (thing ++ " provider");
-  moveByN x y;
+def provide2 = \buffer. \product. \ingr1. \ingr2.
+  setname (fst product ++ " provider");
   forever {
-    ifC (fmap not (has thing)) {
-      while (cur <- count thing; return (cur < 8)) {
-        moveByN (i1x - x) (i1y - y);
-        repeat n1 {get ingr1};
-        moveByN (i2x - i1x) (i2y - i1y);
-        repeat n2 {get ingr2};
-        moveByN (x - i2x) (y - i2y);
-        make thing
+    snd product (
+      while (has (fst product)) {
+        waitWhile (ishere (fst product));
+        place (fst product)
       }
-    } {};
-    waitWhile (ishere thing);
-    place thing;
-  }
-end
-
-def provide3
-  = \x. \y. \thing. \n1. \ingr1. \i1x. \i1y.
-                    \n2. \ingr2. \i2x. \i2y.
-                    \n3. \ingr3. \i3x. \i3y.
-  setname (thing ++ " provider");
-  moveByN x y;
-  forever {
-    ifC (fmap not (has thing)) {
-      while (cur <- count thing; return (cur < 8)) {
-        moveByN (i1x - x) (i1y - y);
-        repeat n1 {get ingr1};
-        moveByN (i2x - i1x) (i2y - i1y);
-        repeat n2 {get ingr2};
-        moveByN (i3x - i2x) (i3y - i2y);
-        repeat n3 {get ingr3};
-        moveByN (x - i3x) (y - i3y);
-        make thing
-      }
-    } {};
-    waitWhile (ishere thing);
-    place thing;
+    );
+    snd (snd ingr1) (repeat (buffer * fst ingr1) {get (fst (snd ingr1))});
+    snd (snd ingr2) (repeat (buffer * fst ingr2) {get (fst (snd ingr2))});
+    repeat buffer {make (fst product)};
   }
 end
 
@@ -716,7 +685,7 @@ end
 //   plantation "bit (0)" atB0
 
 def plantation : string -> (cmd () -> cmd ()) -> cmd () = \product. \there.
-  depot <- build {there (provide0 product)};
+  depot <- build {provide0 (product, there)};
   harvester <- build {
     setname (product ++ " harvester");
     waitFor product;
@@ -730,7 +699,7 @@ def plantation : string -> (cmd () -> cmd ()) -> cmd () = \product. \there.
 end
 
 def natural_plantation : string -> (cmd () -> cmd ()) -> cmd () = \product. \there.
-  depot <- build {there (provide0 product)};
+  depot <- build {provide0 (product, there)};
   build {
     setname (product ++ " harvester");
     there (
@@ -752,8 +721,8 @@ end
 //   - workbench
 
 def process_trees = \there.
-  log_depot <- build {there (tR; m1; provide0 "log")};
-  branch_depot <- build {there (tR; m2; provide0 "branch")};
+  log_depot <- build {there (tR; m1; provide0 ("log", \c.c))};
+  branch_depot <- build {there (tR; m2; provide0 ("branch", \c.c))};
   build {
     setname "tree processor";
     there (
@@ -840,18 +809,3 @@ end
 //     repeat buffer {make productName};
 //   }
 // end
-
-def provide2' = \buffer. \product. \ingr1. \ingr2.
-  setname (fst product ++ " provider");
-  forever {
-    snd product (
-      while (has (fst product)) {
-        waitWhile (ishere (fst product));
-        place (fst product)
-      }
-    );
-    snd (snd ingr1) (repeat (buffer * fst ingr1) {get (fst (snd ingr1))});
-    snd (snd ingr2) (repeat (buffer * fst ingr2) {get (fst (snd ingr2))});
-    repeat buffer {make (fst product)};
-  }
-end
