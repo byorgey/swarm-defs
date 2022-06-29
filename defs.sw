@@ -626,6 +626,7 @@ end
 //   - strange loop
 //   - workbench
 //   - branch predictor
+//   - logger
 
 def provide1 = \x. \y. \thing. \n. \ingr. \ix. \iy.
   setname (thing ++ " provider");
@@ -658,6 +659,30 @@ def provide2 : int -> int -> string -> int -> string -> int -> int
         moveByN (i2x - i1x) (i2y - i1y);
         repeat n2 {get ingr2};
         moveByN (x - i2x) (y - i2y);
+        make thing
+      }
+    } {};
+    waitWhile (ishere thing);
+    place thing;
+  }
+end
+
+def provide3
+  = \x. \y. \thing. \n1. \ingr1. \i1x. \i1y.
+                    \n2. \ingr2. \i2x. \i2y.
+                    \n3. \ingr3. \i3x. \i3y.
+  setname (thing ++ " provider");
+  moveByN x y;
+  forever {
+    ifC (fmap not (has thing)) {
+      while (cur <- count thing; return (cur < 8)) {
+        moveByN (i1x - x) (i1y - y);
+        repeat n1 {get ingr1};
+        moveByN (i2x - i1x) (i2y - i1y);
+        repeat n2 {get ingr2};
+        moveByN (i3x - i2x) (i3y - i2y);
+        repeat n3 {get ingr3};
+        moveByN (x - i3x) (y - i3y);
         make thing
       }
     } {};
