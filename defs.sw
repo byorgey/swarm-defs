@@ -371,8 +371,8 @@ def forever : {cmd a} -> cmd b = \c.
   force c; forever c
 end
 
-def repeat : int -> {cmd a} -> cmd () = \n. \c.
-  if (n == 0) {} {force c ; repeat (n-1) c}
+def x : int -> {cmd a} -> cmd () = \n. \c.
+  if (n == 0) {} {force c ; x (n-1) c}
 end
 
 def while : cmd bool -> {cmd a} -> cmd () = \test. \body.
@@ -401,8 +401,8 @@ end
 // Versions that assume robot is facing N as pre/postcondition.
 // These do not require a compass.
 def moveByN : int -> int -> cmd () = \dx. \dy.
-  if (dy < 0) {tB} {}; repeat (abs dy) {move}; if (dy < 0) {tB} {};
-  if (dx < 0) {tL} {tR}; repeat (abs dx) {move}; if (dx < 0) {tR} {tL};
+  if (dy < 0) {tB} {}; x (abs dy) {move}; if (dy < 0) {tB} {};
+  if (dx < 0) {tL} {tR}; x (abs dx) {move}; if (dx < 0) {tR} {tL};
 end
 
 def moveToN : int -> int -> cmd () = \x. \y.
@@ -414,8 +414,8 @@ end
 
 // Arbitrary orientation, requires compass.
 def moveBy : int -> int -> cmd () = \dx. \dy.
-  if (dx < 0) {tW} {tE}; repeat (abs dx) {move};
-  if (dy < 0) {tS} {tN}; repeat (abs dy) {move}
+  if (dx < 0) {tW} {tE}; x (abs dx) {move};
+  if (dy < 0) {tS} {tN}; x (abs dy) {move}
 end
 
 def moveTo : int -> int -> cmd () = \x. \y.
@@ -639,8 +639,8 @@ def provide1 = \buffer. \product. \ingr1.
         place (fst product)
       }
     );
-    snd (snd ingr1) (repeat (buffer * fst ingr1) {get (fst (snd ingr1))});
-    repeat buffer {make (fst product)};
+    snd (snd ingr1) (x (buffer * fst ingr1) {get (fst (snd ingr1))});
+    x buffer {make (fst product)};
   }
 end
 
@@ -653,9 +653,9 @@ def provide2 = \buffer. \product. \ingr1. \ingr2.
         place (fst product)
       }
     );
-    snd (snd ingr1) (repeat (buffer * fst ingr1) {get (fst (snd ingr1))});
-    snd (snd ingr2) (repeat (buffer * fst ingr2) {get (fst (snd ingr2))});
-    repeat buffer {make (fst product)};
+    snd (snd ingr1) (x (buffer * fst ingr1) {get (fst (snd ingr1))});
+    snd (snd ingr2) (x (buffer * fst ingr2) {get (fst (snd ingr2))});
+    x buffer {make (fst product)};
   }
 end
 
@@ -804,8 +804,8 @@ end
 //         place productName
 //       }
 //     );
-//     atIngr1 (repeat (buffer*n1) {get ingr1Name});
-//     atIngr2 (repeat (buffer*n2) {get ingr2Name});
-//     repeat buffer {make productName};
+//     atIngr1 (x (buffer*n1) {get ingr1Name});
+//     atIngr2 (x (buffer*n2) {get ingr2Name});
+//     x buffer {make productName};
 //   }
 // end
