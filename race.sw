@@ -13,7 +13,7 @@ def x2 = \c. c; c end
 def x4 = \c. x2 (x2 c) end
 def x16 = \c. x4 (x4 c) end
 
-// Doesn't seem to cause a race condition...
+// Attempt 1. Doesn't seem to cause a race condition...
 def frenzy = x16 (
     build {
       require 1 "tree";
@@ -27,4 +27,21 @@ def frenzy = x16 (
       }
     }
   )
+end
+
+def frenzy2 =
+  build {
+    forever {
+      create "tree";
+      busyWhile (ishere "tree");
+      place "tree"
+    }
+  };
+  build {
+    forever {
+      busyUntil (ishere "tree");
+      harvest;
+      n <- random 4; wait n
+    }
+  }
 end
