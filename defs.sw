@@ -751,7 +751,7 @@ end
 // Utilities + specific steps for speedrun strategy
 ////////////////////////////////////////////////////////////
 
-def make_harvester =
+def makeH =
   x3 (make "log");
   x3 (make "board");
   make "box";
@@ -759,9 +759,14 @@ def make_harvester =
   make "harvester"
 end
 
+def makeB =
+  x2 (make "log"; make "board");
+  make "boat"
+end
+
 def makeBP = make "branch predictor" end
 
-def first_3_trees = make_harvester; makeBP end
+def first_3_trees = makeH; makeBP end
 
 def next_trees = \n.
   n (make "log");
@@ -769,7 +774,7 @@ def next_trees = \n.
   x3 (make "board"; make "workbench")
 end
 
-def make_drill =
+def makeD =
   make "box";
   x32 (make "wooden gear");
   make "small motor";
