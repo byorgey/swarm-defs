@@ -465,11 +465,11 @@ def doboxP : cmd a -> dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> cmd boo
   x3 (turn d); rep1 move; turn d
 end
 
-def harvestbox : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> string -> cmd () = \d. \rep1. \rep2. \thing.
+def harvestbox : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> text -> cmd () = \d. \rep1. \rep2. \thing.
   doboxP harvest d rep1 rep2 (ishere thing)
 end
 
-def grabbox : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> string -> cmd () = \d. \rep1. \rep2. \thing.
+def grabbox : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> text -> cmd () = \d. \rep1. \rep2. \thing.
   doboxP grab d rep1 rep2 (ishere thing)
 end
 
@@ -487,7 +487,7 @@ def tend = \thing. \at.
   }
 end
 
-def plant_garden : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> string -> cmd () = \d. \rows. \cols. \thing.
+def plant_garden : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> text -> cmd () = \d. \rows. \cols. \thing.
   rows (
     cols (place thing; harvest; move; return ()); tB;
     cols move; tB;
@@ -496,9 +496,9 @@ def plant_garden : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> string -> 
   x3 (turn d); rows move; turn d
 end
 
-def giveall : robot -> string -> cmd () = \r. \thing. while (has thing) {give r thing} end
+def giveall : robot -> text -> cmd () = \r. \thing. while (has thing) {give r thing} end
 
-def tendbox : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> string -> robot -> cmd ()
+def tendbox : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> text -> robot -> cmd ()
   = \d. \rows. \cols. \thing. \r.
     forever {
       harvestbox d rows cols thing;
@@ -684,7 +684,7 @@ end
 //   def atB0 = \c. atSW m2 m5 (uB c) end
 //   plantation "bit (0)" atB0
 
-def plantation : string -> (cmd () -> cmd ()) -> cmd () = \product. \there.
+def plantation : text -> (cmd () -> cmd ()) -> cmd () = \product. \there.
   depot <- build {provide0 (product, there)};
   harvester <- build {
     setname (product ++ " harvester");
@@ -698,7 +698,7 @@ def plantation : string -> (cmd () -> cmd ()) -> cmd () = \product. \there.
   give harvester product
 end
 
-def natural_plantation : string -> (cmd () -> cmd ()) -> cmd () = \product. \there.
+def natural_plantation : text -> (cmd () -> cmd ()) -> cmd () = \product. \there.
   depot <- build {provide0 (product, there)};
   build {
     setname (product ++ " harvester");
