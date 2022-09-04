@@ -766,7 +766,7 @@ end
 
 def makeBP = make "branch predictor" end
 
-def first_3_trees = makeH; makeBP end
+def first_3_trees = makeH; makeBP; place "lambda"; build {harvest} end
 
 def next_trees = \n.
   n (make "log");
