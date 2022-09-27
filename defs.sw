@@ -371,11 +371,11 @@ def forever : {cmd a} -> cmd b = \c.
   force c; forever c
 end
 
-def x : int -> {cmd a} -> cmd () = \n. \c.
+def x : int -> {cmd a} -> cmd unit = \n. \c.
   if (n == 0) {} {force c ; x (n-1) c}
 end
 
-def while : cmd bool -> {cmd a} -> cmd () = \test. \body.
+def while : cmd bool -> {cmd a} -> cmd unit = \test. \body.
   ifC test {force body ; while test body} {}
 end
 
@@ -400,12 +400,12 @@ end
 
 // Versions that assume robot is facing N as pre/postcondition.
 // These do not require a compass.
-def moveByN : int -> int -> cmd () = \dx. \dy.
+def moveByN : int -> int -> cmd unit = \dx. \dy.
   if (dy < 0) {tB} {}; x (abs dy) {move}; if (dy < 0) {tB} {};
   if (dx < 0) {tL} {tR}; x (abs dx) {move}; if (dx < 0) {tR} {tL};
 end
 
-def moveToN : int -> int -> cmd () = \x. \y.
+def moveToN : int -> int -> cmd unit = \x. \y.
   loc <- whereami;
   let dx = x - fst loc in
   let dy = y - snd loc in
@@ -413,12 +413,12 @@ def moveToN : int -> int -> cmd () = \x. \y.
 end
 
 // Arbitrary orientation, requires compass.
-def moveBy : int -> int -> cmd () = \dx. \dy.
+def moveBy : int -> int -> cmd unit = \dx. \dy.
   if (dx < 0) {tW} {tE}; x (abs dx) {move};
   if (dy < 0) {tS} {tN}; x (abs dy) {move}
 end
 
-def moveTo : int -> int -> cmd () = \x. \y.
+def moveTo : int -> int -> cmd unit = \x. \y.
   loc <- whereami;
   let dx = x - fst loc in
   let dy = y - snd loc in
@@ -427,7 +427,7 @@ end
 
 // Moving + drilling.
 def tryDrill = ifC blocked { drill forward } {} end
-def push : cmd () = tryDrill; move end
+def push : cmd unit = tryDrill; move end
 
 def drillbox = \d. \rep1. \rep2.
   rep1 (
@@ -457,7 +457,7 @@ def grabline = \rep. \thing. dolineP grab rep (ishere thing) end
 
 def drillline = \rep. dolineP (drill forward) rep blocked end
 
-def doboxP : cmd a -> dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> cmd bool -> cmd () = \act. \d. \rep1. \rep2. \pred.
+def doboxP : cmd a -> dir -> (cmd unit -> cmd unit) -> (cmd unit -> cmd unit) -> cmd bool -> cmd unit = \act. \d. \rep1. \rep2. \pred.
   rep1 (
     dolineP act rep2 pred;
     turn d; move; x3 (turn d)
@@ -465,11 +465,11 @@ def doboxP : cmd a -> dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> cmd boo
   x3 (turn d); rep1 move; turn d
 end
 
-def harvestbox : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> text -> cmd () = \d. \rep1. \rep2. \thing.
+def harvestbox : dir -> (cmd unit -> cmd unit) -> (cmd unit -> cmd unit) -> text -> cmd unit = \d. \rep1. \rep2. \thing.
   doboxP harvest d rep1 rep2 (ishere thing)
 end
 
-def grabbox : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> text -> cmd () = \d. \rep1. \rep2. \thing.
+def grabbox : dir -> (cmd unit -> cmd unit) -> (cmd unit -> cmd unit) -> text -> cmd unit = \d. \rep1. \rep2. \thing.
   doboxP grab d rep1 rep2 (ishere thing)
 end
 
@@ -487,7 +487,7 @@ def tend = \thing. \at.
   }
 end
 
-def plant_garden : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> text -> cmd () = \d. \rows. \cols. \thing.
+def plant_garden : dir -> (cmd unit -> cmd unit) -> (cmd unit -> cmd unit) -> text -> cmd unit = \d. \rows. \cols. \thing.
   rows (
     cols (place thing; harvest; move; return ()); tB;
     cols move; tB;
@@ -496,9 +496,9 @@ def plant_garden : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> text -> cm
   x3 (turn d); rows move; turn d
 end
 
-def giveall : robot -> text -> cmd () = \r. \thing. while (has thing) {give r thing} end
+def giveall : robot -> text -> cmd unit = \r. \thing. while (has thing) {give r thing} end
 
-def tendbox : dir -> (cmd () -> cmd ()) -> (cmd () -> cmd ()) -> text -> robot -> cmd ()
+def tendbox : dir -> (cmd unit -> cmd unit) -> (cmd unit -> cmd unit) -> text -> robot -> cmd unit
   = \d. \rows. \cols. \thing. \r.
     forever {
       harvestbox d rows cols thing;
@@ -684,7 +684,7 @@ end
 //   def atB0 = \c. atSW m2 m5 (uB c) end
 //   plantation "bit (0)" atB0
 
-def plantation : text -> (cmd () -> cmd ()) -> cmd () = \product. \there.
+def plantation : text -> (cmd unit -> cmd unit) -> cmd unit = \product. \there.
   depot <- build {provide0 (product, there)};
   harvester <- build {
     setname (product ++ " harvester");
@@ -698,7 +698,7 @@ def plantation : text -> (cmd () -> cmd ()) -> cmd () = \product. \there.
   give harvester product
 end
 
-def natural_plantation : text -> (cmd () -> cmd ()) -> cmd () = \product. \there.
+def natural_plantation : text -> (cmd unit -> cmd unit) -> cmd unit = \product. \there.
   depot <- build {provide0 (product, there)};
   build {
     setname (product ++ " harvester");
