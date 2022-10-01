@@ -1,7 +1,7 @@
 - Get a lambda (move manually; can't use grabXX yet)
 - Get 3 trees (can use grabXX now)
   - first_3_trees:
-    - Make a harvester
+    - Make a harvester (makeH)
     - Make a branch predictor
     - Plant 1 lambda UNDER the base
       - place "lambda"; build {harvest}
@@ -9,6 +9,7 @@
 - next_trees x(n-1)
 - Harvest rocks in a grid; make a furnace
 - Harvest more trees if they have regrown
+- Harvest lodestones in a grid
 - Harvest some copper in a grid
   - Note, IF there's not much copper, skip down to making a drill,
     use it to get some copper first manually!
@@ -20,7 +21,6 @@
     and one in case we want to harvest more trees
 - Tend lambda under the base
   - build {tend "lambda" (\c.c)}
-- switch inventory to not show 0
 - Make 5 loggers and one harvester
 - Set up tree plantation once we have 5 lambdas
   - define atLog, atBranch
@@ -37,7 +37,7 @@
   - obtain bits -> make drill bit
   - ensure 6 copper wire
   - ensure 70 boards  (logs yield 1:4)
-  - make_drill
+  - makeD
 - Set up copper operation
   - Find copper mine with drillbox
   - define atCopper for depot location
