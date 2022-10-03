@@ -748,7 +748,7 @@ def tree_plantation = \there.
 end
 
 ////////////////////////////////////////////////////////////
-// Utilities + specific steps for speedrun strategy
+// Utilities + specific steps for speedrun strategies
 ////////////////////////////////////////////////////////////
 
 def makeH =
@@ -767,6 +767,14 @@ end
 def makeBP = make "branch predictor" end
 
 def first_3_trees = makeH; makeBP; place "lambda"; build {harvest} end
+
+def plantrow = \x. \thing.
+  x (m1; place thing; harvest; return ());
+  tB; x m1; tB
+end
+
+def lambdas = build {require 1 "lambda"; plantrow x5 "lambda"} end
+def get_lambdas = build {x5 (m1; grab); tB; m5; x5 (give base "lambda")} end
 
 def next_trees = \n.
   n (make "log");

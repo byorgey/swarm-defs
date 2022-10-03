@@ -46,3 +46,17 @@
   - atCopper (mine "copper ore" atCopperMine copperDepot)
 - Use generic prep_provider function to set up counter provider
 - Now use prep_provider_C for the rest
+
+
+Curry
+=====
+
+- Get a lambda
+- Get 3 trees (use 3 grabXX commands in sequence)
+- first_3_trees
+- Harvest 2 more trees; makeB
+- Harvest 1 more lambda (build {harvest})
+- plant a row of lambdas (lambdas)
+- Get some water: require "boat"; grabXX
+- get_lambdas
+- make "curry"
