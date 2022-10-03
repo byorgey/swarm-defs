@@ -768,13 +768,22 @@ def makeBP = make "branch predictor" end
 
 def first_3_trees = makeH; makeBP; place "lambda"; build {harvest} end
 
+def trees5 = first_3_trees; makeB end
+
+def grabrow = \x.
+  x (grab; m1);
+  tB; x m1; tB
+end
+
 def plantrow = \x. \thing.
   x (m1; place thing; harvest; return ());
   tB; x m1; tB
 end
 
-def lambdas = build {require 1 "lambda"; plantrow x5 "lambda"} end
-def get_lambdas = build {x5 (m1; grab); tB; m5; x5 (give base "lambda")} end
+def lambdas = \d. build {require 1 "lambda"; turn d; plantrow x4 "lambda"} end
+def get_lambdas = \d. build {turn d; x4 (m1; grab); tB; m5; x4 (give base "lambda")} end
+
+def get_water = \c. build {require "treads"; require "boat"; c grab} end
 
 def next_trees = \n.
   n (make "log");

@@ -52,11 +52,14 @@ Curry
 =====
 
 - Get a lambda
-- Get 3 trees (use 3 grabXX commands in sequence)
-- first_3_trees
-- Harvest 2 more trees; makeB
-- Harvest 1 more lambda (build {harvest})
-- plant a row of lambdas (lambdas)
-- Get some water: require "boat"; grabXX
-- get_lambdas
+- slv
+- Get 5 trees (use 5 grabXX commands in sequence, or atXX (grabrow x5))
+- slv; trees5
+- slv
+- build {harvest}; wait 2; slv  (repeat until lambda)
+- lambdas <dir>
+- slv
+- get_water (atXX x y)
+- slv
+- get_lambdas <dir>
 - make "curry"
