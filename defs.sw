@@ -371,8 +371,8 @@ def forever : {cmd a} -> cmd b = \c.
   force c; forever c
 end
 
-def x : int -> {cmd a} -> cmd unit = \n. \c.
-  if (n == 0) {} {force c ; x (n-1) c}
+def x : int -> cmd a -> cmd unit = \n. \c.
+  if (n == 0) {} {c ; x (n-1) c}
 end
 
 def while : cmd bool -> {cmd a} -> cmd unit = \test. \body.
@@ -380,6 +380,8 @@ def while : cmd bool -> {cmd a} -> cmd unit = \test. \body.
 end
 
 def waitWhile = \test. while test {wait 1} end
+
+def unless = \test. ifC (fmap not test) end
 
 def until = \test. while (fmap not test) end
 
@@ -401,28 +403,37 @@ end
 // Versions that assume robot is facing N as pre/postcondition.
 // These do not require a compass.
 def moveByN : int -> int -> cmd unit = \dx. \dy.
-  if (dy < 0) {tB} {}; x (abs dy) {move}; if (dy < 0) {tB} {};
-  if (dx < 0) {tL} {tR}; x (abs dx) {move}; if (dx < 0) {tR} {tL};
+  if (dy < 0) {tB} {}; x (abs dy) move; if (dy < 0) {tB} {};
+  if (dx < 0) {tL} {tR}; x (abs dx) move; if (dx < 0) {tR} {tL};
 end
 
-def moveToN : int -> int -> cmd unit = \x. \y.
+def moveToN : int * int -> cmd unit = \tgt.
   loc <- whereami;
-  let dx = x - fst loc in
-  let dy = y - snd loc in
+  let dx = fst tgt - fst loc in
+  let dy = snd tgt - snd loc in
   moveByN dx dy
 end
 
 // Arbitrary orientation, requires compass.
 def moveBy : int -> int -> cmd unit = \dx. \dy.
-  if (dx < 0) {tW} {tE}; x (abs dx) {move};
-  if (dy < 0) {tS} {tN}; x (abs dy) {move}
+  if (dx < 0) {tW} {tE}; x (abs dx) move;
+  if (dy < 0) {tS} {tN}; x (abs dy) move
 end
 
-def moveTo : int -> int -> cmd unit = \x. \y.
+def moveTo : int * int -> cmd unit = \tgt.
   loc <- whereami;
-  let dx = x - fst loc in
-  let dy = y - snd loc in
+  let dx = fst tgt - fst loc in
+  let dy = snd tgt - snd loc in
   moveBy dx dy
+end
+
+// XXX add compass command 'heading : cmd dir', so we can make
+// 'excursion' work properly!  Currently always ends facing N.
+
+def excursion : cmd unit -> cmd unit = \m.
+  pos <- whereami;
+  m;
+  moveTo pos
 end
 
 // Moving + drilling.
@@ -496,9 +507,9 @@ def plant_garden : dir -> (cmd unit -> cmd unit) -> (cmd unit -> cmd unit) -> te
   x3 (turn d); rows move; turn d
 end
 
-def giveall : robot -> text -> cmd unit = \r. \thing. while (has thing) {give r thing} end
+def giveall : actor -> text -> cmd unit = \r. \thing. while (has thing) {give r thing} end
 
-def tendbox : dir -> (cmd unit -> cmd unit) -> (cmd unit -> cmd unit) -> text -> robot -> cmd unit
+def tendbox : dir -> (cmd unit -> cmd unit) -> (cmd unit -> cmd unit) -> text -> actor -> cmd unit
   = \d. \rows. \cols. \thing. \r.
     forever {
       harvestbox d rows cols thing;
@@ -521,11 +532,36 @@ end
 // Pull-based manufacturing
 ////////////////////////////////////////////////////////////
 
-def get = \thing.
-  waitUntil (ishere thing);
-  grab
+def is_empty =
+  here <- scan down;
+  return (here == inl ())
 end
 
+def place_atomic = \product.
+  atomic (
+    here <- scan down;
+    if (here == inl ()) {
+      place product;
+      return true
+    } {
+      return false
+    }
+  )
+end
+
+def grab_atomic = \thing.
+  atomic (
+    b <- ishere thing;
+    if b {
+      grab;
+      return true
+    } {
+      return false
+    }
+  )
+end
+
+def get = \thing. waitUntil (grab_atomic thing) end
 
 def transport = \thing. \x1. \y1. \r. \x2. \y2.
   moveByN x1 y1;
@@ -639,8 +675,8 @@ def provide1 = \buffer. \product. \ingr1.
         place (fst product)
       }
     );
-    snd (snd ingr1) (x (buffer * fst ingr1) {get (fst (snd ingr1))});
-    x buffer {make (fst product)};
+    snd (snd ingr1) (x (buffer * fst ingr1) (get (fst (snd ingr1))));
+    x buffer (make (fst product));
   }
 end
 
@@ -653,9 +689,9 @@ def provide2 = \buffer. \product. \ingr1. \ingr2.
         place (fst product)
       }
     );
-    snd (snd ingr1) (x (buffer * fst ingr1) {get (fst (snd ingr1))});
-    snd (snd ingr2) (x (buffer * fst ingr2) {get (fst (snd ingr2))});
-    x buffer {make (fst product)};
+    snd (snd ingr1) (x (buffer * fst ingr1) (get (fst (snd ingr1))));
+    snd (snd ingr2) (x (buffer * fst ingr2) (get (fst (snd ingr2))));
+    x buffer (make (fst product));
   }
 end
 
@@ -768,7 +804,7 @@ def makeBP = make "branch predictor" end
 
 def first_3_trees = makeH; makeBP; place "lambda"; build {harvest} end
 
-def trees5 = first_3_trees; makeB end
+def t5 = first_3_trees; makeB end
 
 def grabrow = \x.
   x (grab; m1);
@@ -781,7 +817,7 @@ def plantrow = \x. \thing.
 end
 
 def lambdas = \d. build {require 1 "lambda"; turn d; plantrow x4 "lambda"} end
-def get_lambdas = \d. build {turn d; x4 (m1; grab); tB; m5; x4 (give base "lambda")} end
+def get_lambdas = \d. build {turn d; x4 (m1; grab); tB; m4; x4 (give base "lambda")} end
 
 def get_water = \c. build {require "treads"; require "boat"; c grab} end
 
@@ -831,3 +867,72 @@ end
 //     x buffer {make productName};
 //   }
 // end
+
+////////////////////////////////////////////////////////////
+// Pull-based manufacturing with automatic location finding
+////////////////////////////////////////////////////////////
+
+def provide_here : text -> (text -> cmd unit) -> cmd unit = \thing. \get_more.
+  setname (thing ++ " depot");
+  forever {
+    while (has thing) {
+      waitWhile (ishere thing);
+      place thing;
+    };
+    get_more thing
+  }
+end
+
+def oracle : text -> cmd unit = \thing. provide_here thing create end
+
+def provide_row : text -> (text -> cmd unit) -> cmd unit = \thing. \get_more.
+  unless (has thing) {get_more thing} {};
+  until (place_atomic thing) { move };
+  turn right; move;
+  provide_here thing get_more
+end
+
+def get_row_n : int -> int -> text -> cmd unit = \cols. \n. \thing.
+  ifC is_empty { turn back; x cols move; turn back; get_row_n 0 n thing }
+  { ifC (ishere thing) {
+      turn right; move; x n (get thing)
+    } {
+      move; get_row_n (cols+1) n thing
+    }
+  }
+end
+
+def get_row : int -> text -> cmd unit = get_row_n 0 end
+
+def min : int -> int -> int = \x. \y. if (x < y) {x} {y} end
+
+def toLower : int -> int = \c.
+  if (charAt 0 "A" <= c && c <= charAt 0 "Z") {c - charAt 0 "A" + charAt 0 "a"} {c}
+end
+
+def first_letter : text -> int = \t. toLower (charAt 0 t) - charAt 0 "a" end
+
+def thing_row : text -> int = \thing. 2 * (first_letter thing / 9) end
+
+def goto_thing_row : dir -> text -> cmd unit = \d. \thing.
+  turn d; x (thing_row thing) move; x3 (turn d)
+end
+
+def provide_alpha : int * int -> text -> (text -> cmd unit) -> cmd unit = \grid. \thing. \get_more.
+  unless (has thing) {get_more thing} {};
+  moveTo grid; turn west;
+  goto_thing_row right thing;
+  provide_row thing get_more
+end
+
+def get_alpha : int * int -> int -> text -> cmd unit = \grid. \n. \thing.
+  excursion (
+    moveTo grid; turn west;
+    goto_thing_row right thing;
+    get_row n thing;
+  )
+end
+
+def make_with : cmd unit -> text -> cmd unit = \get_ingrs. \thing.
+  get_ingrs; make thing
+end
