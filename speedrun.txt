@@ -54,12 +54,12 @@ Curry
 - Get a lambda
 - slv
 - Get 5 trees (use 5 grabXX commands in sequence, or atXX (grabrow x5))
-- slv; trees5
+- slv; t5
+- slv
+- get_water (atXX x y)
 - slv
 - build {harvest}; wait 2; slv  (repeat until lambda)
 - lambdas <dir>
-- slv
-- get_water (atXX x y)
 - slv
 - get_lambdas <dir>
 - make "curry"
