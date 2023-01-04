@@ -936,3 +936,37 @@ end
 def make_with : cmd unit -> text -> cmd unit = \get_ingrs. \thing.
   get_ingrs; make thing
 end
+
+////////////////////////////////////////////////////////////
+// DEMO
+////////////////////////////////////////////////////////////
+
+def g = \n. \thing. get_alpha (-1,1) n thing end
+def mk = \thing. \more. build {provide_alpha (-1,1) thing (make_with more)} end
+def mkR = \catalyst. \thing. \more.
+  build {
+    g 1 catalyst; equip catalyst;
+    provide_alpha (-1,1) thing (make_with more)
+  }
+end
+def oracle = \thing. build {provide_alpha (-1,1) thing create} end
+
+def demo =
+  oracle "log";
+  oracle "rock";
+  oracle "lambda";
+  oracle "bit (0)";
+  oracle "bit (1)";
+  oracle "quartz";
+  oracle "copper ore";
+
+  mk "furnace" (g 5 "rock");
+  mk "board" (g 1 "log");
+  mk "wooden gear" (g 2 "board");
+  mkR "furnace" "copper wire" (g 1 "log"; g 1 "copper ore");
+  mk "box" (g 6 "board");
+  mk "small motor" (g 32 "wooden gear"; g 6 "copper wire");
+  mk "drill bit" (g 1 "bit (0)"; g 1 "bit (1)");
+  mk "drill" (g 1 "box"; g 1 "drill bit"; g 1 "small motor");
+end
+
