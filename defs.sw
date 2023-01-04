@@ -877,7 +877,7 @@ def provide_here : text -> (text -> cmd unit) -> cmd unit = \thing. \get_more.
   forever {
     while (has thing) {
       waitWhile (ishere thing);
-      place thing;
+      place_atomic thing;
     };
     get_more thing
   }
@@ -887,7 +887,7 @@ def oracle : text -> cmd unit = \thing. provide_here thing create end
 
 def provide_row : text -> (text -> cmd unit) -> cmd unit = \thing. \get_more.
   unless (has thing) {get_more thing} {};
-  until (place_atomic thing) { move };
+  until (liftA2 or (ishere thing) (place_atomic thing)) { move };
   turn right; move;
   provide_here thing get_more
 end
@@ -954,14 +954,16 @@ def oracle = \thing. build {provide_alpha (-1,1) thing create} end
 def demo =
   oracle "log";
   oracle "rock";
-  oracle "lambda";
   oracle "bit (0)";
   oracle "bit (1)";
-  oracle "quartz";
   oracle "copper ore";
 
   mk "furnace" (g 5 "rock");
   mk "board" (g 1 "log");
+  mk "board" (g 1 "log");
+  mk "wooden gear" (g 2 "board");
+  mk "wooden gear" (g 2 "board");
+  mk "wooden gear" (g 2 "board");
   mk "wooden gear" (g 2 "board");
   mkR "furnace" "copper wire" (g 1 "log"; g 1 "copper ore");
   mk "box" (g 6 "board");
@@ -970,3 +972,9 @@ def demo =
   mk "drill" (g 1 "box"; g 1 "drill bit"; g 1 "small motor");
 end
 
+// TODO: abstract out how to find row.  Looking up row based on name is cool but
+// depends on decoder ring.  Want a version that just makes a long row.  Then
+// we also probably don't need GPS etc. since we can just walk up and down the row.
+
+// TODO:
+//   - way to view requirements would help
