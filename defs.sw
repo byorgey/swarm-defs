@@ -950,25 +950,20 @@ def demo =
   oracle "bit (0)";
   oracle "bit (1)";
   oracle "copper ore";
+  oracle "iron ore";
 
   mk "furnace" (g 5 "rock");
-  mk "board" (g 1 "log");
-  mk "board" (g 1 "log");
-  mk "board" (g 1 "log");
-  mk "board" (g 1 "log");
-  mk "wooden gear" (g 2 "board");
-  mk "wooden gear" (g 2 "board");
-  mk "wooden gear" (g 2 "board");
-  mk "wooden gear" (g 2 "board");
-  mk "wooden gear" (g 2 "board");
-  mk "wooden gear" (g 2 "board");
-  mk "wooden gear" (g 2 "board");
-  mk "wooden gear" (g 2 "board");
+  x4 (mk "board" (g 1 "log"));
+  x8 (mk "wooden gear" (g 2 "board"));
   mkR "furnace" "copper wire" (g 1 "log"; g 1 "copper ore");
   mk "box" (g 6 "board");
   mk "small motor" (g 32 "wooden gear"; g 6 "copper wire");
   mk "drill bit" (g 1 "bit (0)"; g 1 "bit (1)");
   mk "drill" (g 1 "box"; g 1 "drill bit"; g 1 "small motor");
+  x4 (mkR "furnace" "iron plate" (g 1 "iron ore"; g 2 "log"));
+  x4 (mk "iron gear" (g 1 "iron plate"));
+  mk "big motor" (g 16 "iron gear"; g 6 "copper wire");
+  mk "metal drill" (g 1 "box"; g 3 "drill bit"; g 1 "big motor");
 end
 
 // TODO:
