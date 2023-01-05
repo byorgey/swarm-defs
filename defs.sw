@@ -357,6 +357,7 @@ end
 // Math & logic
 
 def abs : int -> int = \x. if (x < 0) {-x} {x} end
+def min : int -> int -> int = \x. \y. if (x < y) {x} {y} end
 
 def or : bool -> bool -> bool = \x. \y. x || y end
 def and : bool -> bool -> bool = \x. \y. x && y end
@@ -834,40 +835,6 @@ def makeD =
   make "drill"
 end
 
-// Next things to do:
-
-// - Redo providerN to take 'atFoo' style arguments, use pairs, etc?
-//    teeterTotter = ("teeter-totter", atTeeterTotter)
-//    woodenGear = ("wooden gear", atWoodenGear) etc.
-//    provide2 teeterTotter (2, woodenGear) (1, board)
-
-// - Function to automatically set up a grid of basic providers
-
-// def provide2' = \buffer. \product. \ingr1c. \ingr2c.
-//   let productName = fst product in
-//   let atProduct   = snd product in
-//   let n1          = fst ingr1c in
-//   let ingr1       = snd ingr1c in
-//   let ingr1Name   = fst ingr1 in
-//   let atIngr1     = snd ingr1 in
-//   let n2          = fst ingr2c in
-//   let ingr2       = snd ingr2c in
-//   let ingr2Name   = fst ingr2 in
-//   let atIngr2     = snd ingr2 in
-//   setname (productName ++ " provider");
-//   forever {
-//     atProduct (
-//       while (has productName) {
-//         waitWhile (ishere productName);
-//         place productName
-//       }
-//     );
-//     atIngr1 (x (buffer*n1) {get ingr1Name});
-//     atIngr2 (x (buffer*n2) {get ingr2Name});
-//     x buffer {make productName};
-//   }
-// end
-
 ////////////////////////////////////////////////////////////
 // Pull-based manufacturing with automatic location finding
 ////////////////////////////////////////////////////////////
@@ -883,54 +850,32 @@ def provide_here : text -> (text -> cmd unit) -> cmd unit = \thing. \get_more.
   }
 end
 
-def oracle : text -> cmd unit = \thing. provide_here thing create end
-
 def provide_row : text -> (text -> cmd unit) -> cmd unit = \thing. \get_more.
-  unless (has thing) {get_more thing} {};
   until (liftA2 or (ishere thing) (place_atomic thing)) { move };
   turn right; move;
   provide_here thing get_more
 end
 
-def get_row_n : int -> int -> text -> cmd unit = \cols. \n. \thing.
-  ifC is_empty { turn back; x cols move; turn back; get_row_n 0 n thing }
-  { ifC (ishere thing) {
-      turn right; move; x n (get thing)
-    } {
-      move; get_row_n (cols+1) n thing
-    }
+def find_row' : dir -> text -> cmd unit = \orig_hdg. \thing.
+  ifC (ishere thing) { turn orig_hdg }
+  {
+    ifC is_empty { turn back } {};
+    move; find_row' orig_hdg thing
   }
 end
 
-def get_row : int -> text -> cmd unit = get_row_n 0 end
-
-def min : int -> int -> int = \x. \y. if (x < y) {x} {y} end
-
-def toLower : int -> int = \c.
-  if (charAt 0 "A" <= c && c <= charAt 0 "Z") {c - charAt 0 "A" + charAt 0 "a"} {c}
+def find_row : text -> cmd unit = \thing.
+  h <- heading;
+  find_row' h thing
 end
 
-def first_letter : text -> int = \t. toLower (charAt 0 t) - charAt 0 "a" end
-
-def thing_row : text -> int = \thing. 2 * (first_letter thing / 9) end
-
-def goto_thing_row : dir -> text -> cmd unit = \d. \thing.
-  turn d; x (thing_row thing) move; x3 (turn d)
-end
-
-def provide_alpha : int * int -> text -> (text -> cmd unit) -> cmd unit = \grid. \thing. \get_more.
-  unless (has thing) {get_more thing} {};
-  moveTo grid; turn west;
-  goto_thing_row right thing;
-  provide_row thing get_more
-end
-
-def get_alpha : int * int -> int -> text -> cmd unit = \grid. \n. \thing.
-  excursion (
-    moveTo grid; turn west;
-    goto_thing_row right thing;
-    get_row n thing;
-  )
+def get_row : int -> text -> cmd unit = \n. \thing.
+  find_row thing;
+  h <- heading;
+  turn left; move;
+  while is_empty {turn back; move; move};
+  x n (get thing);
+  turn back; move; turn h
 end
 
 def make_with : cmd unit -> text -> cmd unit = \get_ingrs. \thing.
@@ -938,18 +883,66 @@ def make_with : cmd unit -> text -> cmd unit = \get_ingrs. \thing.
 end
 
 ////////////////////////////////////////////////////////////
+// Three-row strategy by first letter, probably not worth it
+////////////////////////////////////////////////////////////
+
+// def toLower : int -> int = \c.
+//   if (charAt 0 "A" <= c && c <= charAt 0 "Z") {c - charAt 0 "A" + charAt 0 "a"} {c}
+// end
+
+// def first_letter : text -> int = \t. toLower (charAt 0 t) - charAt 0 "a" end
+
+// def thing_row : text -> int = \thing. 2 * (first_letter thing / 9) end
+
+// def goto_thing_row : dir -> text -> cmd unit = \d. \thing.
+//   turn d; x (thing_row thing) move; x3 (turn d)
+// end
+
+// def provide_alpha : int * int -> text -> (text -> cmd unit) -> cmd unit = \grid. \thing. \get_more.
+//   unless (has thing) {get_more thing} {};
+//   moveTo grid; turn west;
+//   goto_thing_row right thing;
+//   provide_row thing get_more
+// end
+
+// def get_alpha : int * int -> int -> text -> cmd unit = \grid. \n. \thing.
+//   excursion (
+//     moveTo grid; turn west;
+//     goto_thing_row right thing;
+//     get_row n thing;
+//   )
+// end
+
+////////////////////////////////////////////////////////////
+// One-row strategy
+////////////////////////////////////////////////////////////
+
+def provide_raw : text -> (text -> cmd unit) -> cmd unit = \thing. \more.
+  unless (has thing) {more thing} {};
+  provide_row thing more
+end
+
+def provide : text -> (text -> cmd unit) -> cmd unit = \thing. \more.
+  unless (has thing) {more thing} {};
+  provide_row thing
+    (\t. turn back; move; turn left; more thing; turn back; find_row thing; turn right; move)
+end
+
+////////////////////////////////////////////////////////////
 // DEMO
 ////////////////////////////////////////////////////////////
 
-def g = \n. \thing. get_alpha (-1,1) n thing end
-def mk = \thing. \more. build {provide_alpha (-1,1) thing (make_with more)} end
+def toStart = turn left; move end
+def g = get_row end
+def mk = \thing. \more. build {toStart; provide thing (make_with more)} end
 def mkR = \catalyst. \thing. \more.
   build {
+    toStart;
     g 1 catalyst; equip catalyst;
-    provide_alpha (-1,1) thing (make_with more)
+    provide thing (make_with more)
   }
 end
-def oracle = \thing. build {provide_alpha (-1,1) thing create} end
+def oracle = \thing. build {toStart; provide_raw thing create} end
 
 def demo =
   oracle "log";
@@ -961,6 +954,12 @@ def demo =
   mk "furnace" (g 5 "rock");
   mk "board" (g 1 "log");
   mk "board" (g 1 "log");
+  mk "board" (g 1 "log");
+  mk "board" (g 1 "log");
+  mk "wooden gear" (g 2 "board");
+  mk "wooden gear" (g 2 "board");
+  mk "wooden gear" (g 2 "board");
+  mk "wooden gear" (g 2 "board");
   mk "wooden gear" (g 2 "board");
   mk "wooden gear" (g 2 "board");
   mk "wooden gear" (g 2 "board");
@@ -971,10 +970,6 @@ def demo =
   mk "drill bit" (g 1 "bit (0)"; g 1 "bit (1)");
   mk "drill" (g 1 "box"; g 1 "drill bit"; g 1 "small motor");
 end
-
-// TODO: abstract out how to find row.  Looking up row based on name is cool but
-// depends on decoder ring.  Want a version that just makes a long row.  Then
-// we also probably don't need GPS etc. since we can just walk up and down the row.
 
 // TODO:
 //   - way to view requirements would help
