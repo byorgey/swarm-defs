@@ -839,8 +839,17 @@ end
 // Pull-based manufacturing with automatic location finding
 ////////////////////////////////////////////////////////////
 
-def provide_here : text -> (text -> cmd unit) -> cmd unit = \thing. \get_more.
+def depot_here : text -> cmd unit = \thing.
   setname (thing ++ " depot");
+  forever {
+    waitWhile (ishere thing);
+    waitUntil (has thing);
+    place thing;
+  }
+end
+
+def provide_here : text -> (text -> cmd unit) -> cmd unit = \thing. \get_more.
+  setname (thing ++ " provider");
   forever {
     while (has thing) {
       waitWhile (ishere thing);
@@ -867,6 +876,14 @@ end
 def find_row : text -> cmd unit = \thing.
   h <- heading;
   find_row' h thing
+end
+
+def get_simple : text -> cmd unit = \thing.
+  until (ishere thing) { move };
+  turn right; move;
+  get thing;
+  turn back; move; turn left;
+  until (ishere "flower") { move }
 end
 
 def get_row : int -> text -> cmd unit = \n. \thing.
@@ -917,6 +934,19 @@ end
 // One-row strategy
 ////////////////////////////////////////////////////////////
 
+
+// Make 'depot' command which acts like provide_raw but (1) never
+// tries to get more, and (2) does a simple 'place' instead of
+// 'atomic_place' (which requires ADT calculator)
+//
+// Argh, not sure how to do it without 'atomic_place' or 'is_empty'
+// for setting shingle, which both require ADT calculator.
+//
+// Maybe propose adding 'isEmpty' primitive provided by scanner.
+
+// def depot : text -> cmd unit = \thing.
+//   waitUntil (has thing);
+
 def provide_raw : text -> (text -> cmd unit) -> cmd unit = \thing. \more.
   unless (has thing) {more thing} {};
   provide_row thing more
@@ -927,6 +957,7 @@ def provide : text -> (text -> cmd unit) -> cmd unit = \thing. \more.
   provide_row thing
     (\t. turn back; move; turn left; more thing; turn back; find_row thing; turn right; move)
 end
+
 
 ////////////////////////////////////////////////////////////
 // DEMO
