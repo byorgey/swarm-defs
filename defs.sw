@@ -382,9 +382,13 @@ end
 
 def waitWhile = \test. while test {wait 1} end
 
-def unless = \test. ifC (fmap not test) end
+// Could do  ifC (fmap not test)  but that requires a lodestone!
+def unless = \test. \then. \else. ifC test else then end
 
-def until = \test. while (fmap not test) end
+// Could define in terms of while but that requires a lodestone!
+def until = \test. \body.
+  ifC test {} {force body ; until test body}
+end
 
 def waitUntil = \test. until test {wait 1} end
 
@@ -533,15 +537,10 @@ end
 // Pull-based manufacturing
 ////////////////////////////////////////////////////////////
 
-def is_empty =
-  here <- scan down;
-  return (here == inl ())
-end
-
 def place_atomic = \product.
   atomic (
-    here <- scan down;
-    if (here == inl ()) {
+    here <- isempty;
+    if (here) {
       place product;
       return true
     } {
@@ -840,7 +839,7 @@ end
 ////////////////////////////////////////////////////////////
 
 def depot_here : text -> cmd unit = \thing.
-  setname (thing ++ " depot");
+  // setname (thing ++ " depot");
   forever {
     waitWhile (ishere thing);
     waitUntil (has thing);
@@ -849,7 +848,7 @@ def depot_here : text -> cmd unit = \thing.
 end
 
 def provide_here : text -> (text -> cmd unit) -> cmd unit = \thing. \get_more.
-  setname (thing ++ " provider");
+  // setname (thing ++ " provider");
   forever {
     while (has thing) {
       waitWhile (ishere thing);
@@ -865,34 +864,28 @@ def provide_row : text -> (text -> cmd unit) -> cmd unit = \thing. \get_more.
   provide_here thing get_more
 end
 
-def find_row' : dir -> text -> cmd unit = \orig_hdg. \thing.
-  ifC (ishere thing) { turn orig_hdg }
+def find_row : text -> cmd unit = \thing.
+  ifC (ishere thing) {}
   {
-    ifC is_empty { turn back } {};
-    move; find_row' orig_hdg thing
+    ifC isempty { turn back; move; until isempty {move}; turn back } {};
+    move; find_row thing
   }
 end
 
-def find_row : text -> cmd unit = \thing.
-  h <- heading;
-  find_row' h thing
-end
-
-def get_simple : text -> cmd unit = \thing.
+def get_simple : (cmd unit -> cmd unit) -> text -> cmd unit = \rep. \thing.
   until (ishere thing) { move };
   turn right; move;
-  get thing;
+  rep (get thing);
   turn back; move; turn left;
-  until (ishere "flower") { move }
+  until isempty { move }; turn back; move
 end
 
 def get_row : int -> text -> cmd unit = \n. \thing.
   find_row thing;
-  h <- heading;
-  turn left; move;
-  while is_empty {turn back; move; move};
+  turn right; move;
   x n (get thing);
-  turn back; move; turn h
+  turn back; move; turn left;
+  until isempty { move }; turn back; move
 end
 
 def make_with : cmd unit -> text -> cmd unit = \get_ingrs. \thing.
@@ -900,52 +893,28 @@ def make_with : cmd unit -> text -> cmd unit = \get_ingrs. \thing.
 end
 
 ////////////////////////////////////////////////////////////
-// Three-row strategy by first letter, probably not worth it
-////////////////////////////////////////////////////////////
-
-// def toLower : int -> int = \c.
-//   if (charAt 0 "A" <= c && c <= charAt 0 "Z") {c - charAt 0 "A" + charAt 0 "a"} {c}
-// end
-
-// def first_letter : text -> int = \t. toLower (charAt 0 t) - charAt 0 "a" end
-
-// def thing_row : text -> int = \thing. 2 * (first_letter thing / 9) end
-
-// def goto_thing_row : dir -> text -> cmd unit = \d. \thing.
-//   turn d; x (thing_row thing) move; x3 (turn d)
-// end
-
-// def provide_alpha : int * int -> text -> (text -> cmd unit) -> cmd unit = \grid. \thing. \get_more.
-//   unless (has thing) {get_more thing} {};
-//   moveTo grid; turn west;
-//   goto_thing_row right thing;
-//   provide_row thing get_more
-// end
-
-// def get_alpha : int * int -> int -> text -> cmd unit = \grid. \n. \thing.
-//   excursion (
-//     moveTo grid; turn west;
-//     goto_thing_row right thing;
-//     get_row n thing;
-//   )
-// end
-
-////////////////////////////////////////////////////////////
 // One-row strategy
 ////////////////////////////////////////////////////////////
 
 
-// Make 'depot' command which acts like provide_raw but (1) never
-// tries to get more, and (2) does a simple 'place' instead of
-// 'atomic_place' (which requires ADT calculator)
-//
-// Argh, not sure how to do it without 'atomic_place' or 'is_empty'
-// for setting shingle, which both require ADT calculator.
-//
-// Maybe propose adding 'isEmpty' primitive provided by scanner.
+// depot command which acts like provide_raw but (1) never tries to
+// get more, and (2) does a simple 'place' instead of 'atomic_place'
+// (which requires ADT calculator).  Useful earlier in the game for
+// collecting basic resources, but have to be careful you don't send
+// several out at once.
 
-// def depot : text -> cmd unit = \thing.
-//   waitUntil (has thing);
+def depot : (cmd unit -> cmd unit) -> text -> cmd actor = \atShingles. \thing.
+  d <- build {
+    waitUntil (has thing);
+    atShingles (
+      until isempty { move };
+      place thing; turn right; move;
+      depot_here thing
+    )
+  };
+  give d thing;
+  return d
+end
 
 def provide_raw : text -> (text -> cmd unit) -> cmd unit = \thing. \more.
   unless (has thing) {more thing} {};
@@ -955,15 +924,29 @@ end
 def provide : text -> (text -> cmd unit) -> cmd unit = \thing. \more.
   unless (has thing) {more thing} {};
   provide_row thing
-    (\t. turn back; move; turn left; more thing; turn back; find_row thing; turn right; move)
+    (\t. turn back; move; turn right; more thing; find_row thing; turn right; move)
 end
 
+def deliver : actor -> text -> cmd unit = \r. \thing.
+  until (ishere thing) { move };
+  turn right; move; giveall r thing; turn back; move; turn left;
+  until (isempty) { move }; turn back; move
+end
+
+// Arguments = how to get to shingle row from base; name of thing; function to extract it
+def resource : (cmd unit -> cmd unit) -> text -> cmd unit -> cmd actor =
+  \atShingles. \thing. \extract.
+  d <- build {depot atShingles thing};
+  give d thing;
+  build {forever {extract; atShingles (deliver d thing)}};
+  return d
+end
 
 ////////////////////////////////////////////////////////////
 // DEMO
 ////////////////////////////////////////////////////////////
 
-def toStart = turn left; move end
+def toStart = move end
 def g = get_row end
 def mk = \thing. \more. build {toStart; provide thing (make_with more)} end
 def mkR = \catalyst. \thing. \more.
@@ -999,3 +982,35 @@ end
 
 // TODO:
 //   - way to view requirements would help
+
+
+////////////////////////////////////////////////////////////
+// Three-row strategy by first letter, probably not worth it
+////////////////////////////////////////////////////////////
+
+// def toLower : int -> int = \c.
+//   if (charAt 0 "A" <= c && c <= charAt 0 "Z") {c - charAt 0 "A" + charAt 0 "a"} {c}
+// end
+
+// def first_letter : text -> int = \t. toLower (charAt 0 t) - charAt 0 "a" end
+
+// def thing_row : text -> int = \thing. 2 * (first_letter thing / 9) end
+
+// def goto_thing_row : dir -> text -> cmd unit = \d. \thing.
+//   turn d; x (thing_row thing) move; x3 (turn d)
+// end
+
+// def provide_alpha : int * int -> text -> (text -> cmd unit) -> cmd unit = \grid. \thing. \get_more.
+//   unless (has thing) {get_more thing} {};
+//   moveTo grid; turn west;
+//   goto_thing_row right thing;
+//   provide_row thing get_more
+// end
+
+// def get_alpha : int * int -> int -> text -> cmd unit = \grid. \n. \thing.
+//   excursion (
+//     moveTo grid; turn west;
+//     goto_thing_row right thing;
+//     get_row n thing;
+//   )
+// end
