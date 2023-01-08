@@ -9,7 +9,6 @@
 - next_trees x(n-1)
 - Harvest rocks in a grid; make a furnace
 - Harvest more trees if they have regrown
-- Harvest lodestones in a grid
 - Harvest some copper in a grid
   - Note, IF there's not much copper, skip down to making a drill,
     use it to get some copper first manually!
@@ -21,6 +20,54 @@
     and one in case we want to harvest more trees
 - Tend lambda under the base
   - build {tend "lambda" (\c.c)}
+- Create tree, log, and branch depots, start a tree farm, deliver to
+  the tree depot
+- Make a special robot just to process the trees
+- Get some bits, start bit farms, create bit depots
+- Make a drill
+  - obtain bits -> make drill bit
+  - ensure 6 copper wire
+  - ensure 70 boards  (logs yield 1:4)
+  - makeD (make two)
+- Now send robot(s) to drill out mountains, identify some mines
+  - Create copper and iron ore depots, start mining & delivering
+
+- Get some LaTeX, start LaTeX farm, create LaTeX depot
+
+- Function for manually fetching raw materials needed for
+  comparator, calculator, rubber band, then function for making the
+  required devices
+
+- Make providers:
+  - copper wire (need to give it the furnace)
+  - strange loop
+  - board (x2?)
+  - wooden gear (x2?)
+  - comparator
+  - flash memory
+  - counter
+  - sand (depot / mining)
+  - glass (needs furnace)
+  - solar panel (needs 3D printer)
+  - calculator
+  - rubber
+  - rubber band
+
+- At this point we should be able to switch to creating providers
+  automatically using devices built by other providers, instead of
+  from raw materials.
+
+- Create more providers to make more drills:
+  - box
+  - drill bit
+  - small motor
+  - drill
+
+- Now start building up tech tree based on iron.
+
+
+
+
 - Make 5 loggers and one harvester
 - Set up tree plantation once we have 5 lambdas
   - define atLog, atBranch
@@ -33,11 +80,6 @@
   - Ensure x4 loggers
   - make 2 harvesters
   - Make bit plantations
-- Make a drill
-  - obtain bits -> make drill bit
-  - ensure 6 copper wire
-  - ensure 70 boards  (logs yield 1:4)
-  - makeD
 - Set up copper operation
   - Find copper mine with drillbox
   - define atCopper for depot location
