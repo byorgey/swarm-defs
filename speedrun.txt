@@ -22,6 +22,10 @@
   - build {tend "lambda" (\c.c)}
 - Create tree, log, and branch depots, start a tree farm, deliver to
   the tree depot
+- Make a rubber band manually
+  - make log
+  - make rubber from LaTeX
+  - make rubber band from rubber + strange loop
 - Make a special robot just to process the trees
 - Get some bits, start bit farms, create bit depots
 - Make a drill
@@ -31,18 +35,18 @@
   - makeD (make two)
 - Now send robot(s) to drill out mountains, identify some mines
   - Create copper and iron ore depots, start mining & delivering
-
 - Get some LaTeX, start LaTeX farm, create LaTeX depot
 
 - Function for manually fetching raw materials needed for
-  comparator, calculator, rubber band, then function for making the
+  comparator, calculator, rubber band, and making the
   required devices
 
 - Make providers:
-  - copper wire (need to give it the furnace)
+  - copper wire (need to give it a furnace)
   - strange loop
   - board (x2?)
   - wooden gear (x2?)
+  - teeter-totter
   - comparator
   - flash memory
   - counter
@@ -62,6 +66,11 @@
   - drill bit
   - small motor
   - drill
+
+- Start pixel farms + set up pixel depots.
+- Make camera + scanner providers.
+
+  - Argh, scanner needs quartz etc.!  Running out of scanners!
 
 - Now start building up tech tree based on iron.
 
