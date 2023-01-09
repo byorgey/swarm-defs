@@ -216,57 +216,6 @@ def scanSW = \x. \y. atSW x y sA end
 def scanWS = \x. \y. atWS x y sA end
 
 ////////////////////////////////////////////////////////////
-// Startup
-////////////////////////////////////////////////////////////
-
-def scan1 =
-  m1; tR;
-  scan down; scan left; m1;
-  scan down; scan left; scan forward; tR; m1;
-  scan down; scan left; m1;
-  scan down; scan left; scan forward; tR; m1;
-  scan down; scan left; m1;
-  scan down; scan left; scan forward; tR; m1;
-  scan down; scan left; m1;
-  scan down; scan left; scan forward; tR; m1;
-  upload base;
-  tR; m1
-end
-
-def scan2 =
-  m2; tR;
-  scan left; m1;
-  scan left; m1;
-  scan left; tR; m1;
-  scan left; m1;
-  scan left; m1;
-  scan left; m1;
-  scan left; tR; m1;
-  scan left; m1;
-  scan left; m1;
-  scan left; m1;
-  scan left; tR; m1;
-  scan left; m1;
-  scan left; m1;
-  scan left; m1;
-  scan left; tR; m1;
-  scan left; m1;
-  tR; m1; m1;
-  upload base;
-end
-
-def startup =
-  build {scan1}; build {scan2};
-  build {salvage};
-  wait 2;
-  build {salvage; give base "plasma cutter"};
-  wait 16;
-  install base "plasma cutter";
-  salvage;
-  wait 16; salvage; salvage
-end
-
-////////////////////////////////////////////////////////////
 // Simple repetition
 ////////////////////////////////////////////////////////////
 
@@ -395,7 +344,12 @@ def waitUntil = \test. until test {wait 1} end
 def moveTo = \thing. until (ishere thing) {move} end
 
 def waitFor = \thing.
-  while (fmap not (has thing)) {wait 4}
+  until (has thing) {wait 4}
+end
+
+def notempty : cmd bool =
+  e <- isempty;
+  return $ if e {false} {true}
 end
 
 ////////////////////////////////////////////////////////////
@@ -432,13 +386,12 @@ def moveTo : int * int -> cmd unit = \tgt.
   moveBy dx dy
 end
 
-// XXX add compass command 'heading : cmd dir', so we can make
-// 'excursion' work properly!  Currently always ends facing N.
-
 def excursion : cmd unit -> cmd unit = \m.
+  hdg <- heading;
   pos <- whereami;
   m;
-  moveTo pos
+  moveTo pos;
+  turn hdg
 end
 
 // Moving + drilling.
@@ -467,9 +420,9 @@ def dolineP = \act. \rep. \pred.
   tB; rep move; tB
 end
 
-def harvestline = \rep. \thing. dolineP harvest rep (ishere thing) end
+def harvestline = \rep. dolineP harvest rep notempty end
 
-def grabline = \rep. \thing. dolineP grab rep (ishere thing) end
+def grabline = \rep. dolineP grab rep notempty end
 
 def drillline = \rep. dolineP (drill forward) rep blocked end
 
@@ -481,12 +434,12 @@ def doboxP : cmd a -> dir -> (cmd unit -> cmd unit) -> (cmd unit -> cmd unit) ->
   x3 (turn d); rep1 move; turn d
 end
 
-def harvestbox : dir -> (cmd unit -> cmd unit) -> (cmd unit -> cmd unit) -> text -> cmd unit = \d. \rep1. \rep2. \thing.
-  doboxP harvest d rep1 rep2 (ishere thing)
+def harvestbox : dir -> (cmd unit -> cmd unit) -> (cmd unit -> cmd unit) -> cmd unit = \d. \rep1. \rep2.
+  doboxP harvest d rep1 rep2 notempty
 end
 
-def grabbox : dir -> (cmd unit -> cmd unit) -> (cmd unit -> cmd unit) -> text -> cmd unit = \d. \rep1. \rep2. \thing.
-  doboxP grab d rep1 rep2 (ishere thing)
+def grabbox : dir -> (cmd unit -> cmd unit) -> (cmd unit -> cmd unit) -> cmd unit = \d. \rep1. \rep2.
+  doboxP grab d rep1 rep2 notempty
 end
 
 def drillbox = \d. \rep1. \rep2.
@@ -504,6 +457,7 @@ def tend = \thing. \at.
 end
 
 def plant_garden : dir -> (cmd unit -> cmd unit) -> (cmd unit -> cmd unit) -> text -> cmd unit = \d. \rows. \cols. \thing.
+  waitFor thing;
   rows (
     cols (place thing; harvest; move; return ()); tB;
     cols move; tB;
@@ -512,26 +466,12 @@ def plant_garden : dir -> (cmd unit -> cmd unit) -> (cmd unit -> cmd unit) -> te
   x3 (turn d); rows move; turn d
 end
 
+def garden : (cmd unit -> cmd unit) -> dir -> (cmd unit -> cmd unit) -> (cmd unit -> cmd unit) -> text -> cmd unit = \at. \d. \rows. \cols. \thing.
+  planter <- build {at (plant_garden d rows cols thing)};
+  give planter thing
+end
+
 def giveall : actor -> text -> cmd unit = \r. \thing. while (has thing) {give r thing} end
-
-def tendbox : dir -> (cmd unit -> cmd unit) -> (cmd unit -> cmd unit) -> text -> actor -> cmd unit
-  = \d. \rows. \cols. \thing. \r.
-    forever {
-      harvestbox d rows cols thing;
-      tB; m1;
-      giveall r thing;
-      tB; m1
-    }
-end
-
-// Execute this *from* the depot, i.e.  atDepot (mine ...)
-def mine = \thing. \atMine. \r.
-  setname (thing ++ " miner");
-  forever {
-    atMine (x16 (drill down));
-    giveall r thing
-  }
-end
 
 ////////////////////////////////////////////////////////////
 // Pull-based manufacturing
@@ -562,226 +502,6 @@ def grab_atomic = \thing.
 end
 
 def get = \thing. waitUntil (grab_atomic thing) end
-
-def transport = \thing. \x1. \y1. \r. \x2. \y2.
-  moveByN x1 y1;
-  forever {
-    x8 (get thing);
-    moveByN (x2 - x1) (y2 - y1);
-    x8 (give r thing);
-    moveByN (x1 - x2) (y1 - y2)
-  }
-end
-
-// Making specific things needed for bootstrapping
-
-def make_counter = \atB0. \atB1.
-  build {
-    atB0 (x8 (get "bit (0)"));
-    atB1 (x8 (get "bit (1)"));
-    make "counter"
-  }
-end
-
-def make_comparator = \atLog. \atCopper.
-  r <- build {
-    wait 3;
-    atLog (x3 (get "log"));
-    x2 (make "board");
-    x2 (make "wooden gear");
-    make "teeter-totter";
-    atCopper (get "copper ore");
-    make "copper wire";
-    make "comparator";
-    give parent "comparator"
-  };
-  give r "furnace"
-end
-
-def prep_provider = \atLog. \atBranch. \atCopper. \atB0. \atB1.
-  r <- build {
-    wait 5;
-    atLog (x4 (get "log"));
-    make "logger";
-    x2 (make "board");
-    x2 (make "wooden gear");
-    make "teeter-totter";
-    atCopper (get "copper ore");
-    make "copper wire";
-    make "comparator";
-    atB0 (x16 (get "bit (0)"));
-    atB1 (x16 (get "bit (1)"));
-    x2 (make "counter"); make "calculator";
-    make "strange loop";
-    atBranch (x4 (get "branch"));
-    make "workbench";
-    make "branch predictor"
-  };
-  give r "furnace";
-  give r "solar panel";  // make this!
-  return r
-end
-
-def prep_provider_C = \atLog. \atBranch. \atCopper. \atCounter.
-  r <- build {
-    wait 5;
-    atLog (x4 (get "log"));
-    make "logger";
-    x2 (make "board");
-    x2 (make "wooden gear");
-    make "teeter-totter";
-    atCopper (get "copper ore");
-    make "copper wire";
-    make "comparator";
-    atCounter (x2 (get "counter")); make "calculator";
-    make "strange loop";
-    atBranch (x4 (get "branch"));
-    make "workbench";
-    make "branch predictor"
-  };
-  give r "furnace";
-  give r "solar panel";  // make this!
-  return r
-end
-
-// Generic producers
-
-// provide1, provide2, etc. need:
-//   - calculator
-//   - comparator
-//   - lambda
-//   - strange loop
-//   - workbench
-//   - branch predictor
-//   - logger
-
-def provide0 = \product.
-  setname (fst product ++ " depot");
-  snd product (
-    forever {
-      waitWhile (ishere (fst product));
-      waitUntil (has (fst product));
-      place (fst product);
-    }
-  )
-end
-
-def provide1 = \buffer. \product. \ingr1.
-  setname (fst product ++ " provider");
-  forever {
-    snd product (
-      while (has (fst product)) {
-        waitWhile (ishere (fst product));
-        place (fst product)
-      }
-    );
-    snd (snd ingr1) (x (buffer * fst ingr1) (get (fst (snd ingr1))));
-    x buffer (make (fst product));
-  }
-end
-
-def provide2 = \buffer. \product. \ingr1. \ingr2.
-  setname (fst product ++ " provider");
-  forever {
-    snd product (
-      while (has (fst product)) {
-        waitWhile (ishere (fst product));
-        place (fst product)
-      }
-    );
-    snd (snd ingr1) (x (buffer * fst ingr1) (get (fst (snd ingr1))));
-    snd (snd ingr2) (x (buffer * fst ingr2) (get (fst (snd ingr2))));
-    x buffer (make (fst product));
-  }
-end
-
-// Automated setup of standard 4x8 plantation + depot.
-// It will look like this:
-//
-//   >........
-//    ........
-//    ........
-//    ........
-//
-// where > is the location and orientation of a robot under execution of 'there'.
-// > will be the location of the depot.  To obtain
-// resources from the depot, go to its cell and execute 'get
-// <resource>'.
-//
-// Requirements:
-//   - branch predictor (2)
-//   - lambda (2)
-//   - strange loop (2)
-//   - logger (2)   -- or whatever is needed for ++
-//   - harvester
-//
-// example:
-//
-//   def atB0 = \c. atSW m2 m5 (uB c) end
-//   plantation "bit (0)" atB0
-
-def plantation : text -> (cmd unit -> cmd unit) -> cmd unit = \product. \there.
-  depot <- build {provide0 (product, there)};
-  harvester <- build {
-    setname (product ++ " harvester");
-    waitFor product;
-    there (
-      m1;
-      plant_garden right x4 x8 product;
-      tendbox right x4 x8 product depot
-    )
-  };
-  give harvester product
-end
-
-def natural_plantation : text -> (cmd unit -> cmd unit) -> cmd unit = \product. \there.
-  depot <- build {provide0 (product, there)};
-  build {
-    setname (product ++ " harvester");
-    there (
-      m1;
-      tendbox right x4 x8 product depot
-    )
-  };
-  return ()
-end
-
-// Trees have to be dealt with specially, because the recipe for processing
-// trees has two outputs.
-//
-// Requirements:
-//   - branch predictor (3)
-//   - lambda (3)
-//   - strange loop (3)
-//   - logger (3)
-//   - workbench
-
-def process_trees = \there.
-  log_depot <- build {there (tR; m1; provide0 ("log", \c.c))};
-  branch_depot <- build {there (tR; m2; provide0 ("branch", \c.c))};
-  build {
-    setname "tree processor";
-    there (
-      forever {
-        get "tree"; make "log";
-        tR; m1; give log_depot "log";
-        m1; x2 (give branch_depot "branch");
-        tB; m2; tR
-      }
-    )
-  }
-end
-
-// Requirements:
-//   - branch predictor (5)
-//   - lambda (5)
-//   - strange loop (5)
-//   - logger (5)
-//   - workbench
-//   - harvester
-def tree_plantation = \there.
-  plantation "tree" there; process_trees there
-end
 
 ////////////////////////////////////////////////////////////
 // Utilities + specific steps for speedrun strategies
@@ -842,7 +562,7 @@ def depot_here : text -> cmd unit = \thing.
   // setname (thing ++ " depot");
   forever {
     waitWhile (ishere thing);
-    waitUntil (has thing);
+    waitFor thing;
     place thing;
   }
 end
@@ -905,7 +625,7 @@ end
 
 def depot : (cmd unit -> cmd unit) -> text -> cmd actor = \atShingles. \thing.
   d <- build {
-    waitUntil (has thing);
+    waitFor thing;
     atShingles (
       until isempty { move };
       place thing; turn right; move;
@@ -927,20 +647,102 @@ def provide : text -> (text -> cmd unit) -> cmd unit = \thing. \more.
     (\t. turn back; move; turn right; more thing; find_row thing; turn right; move)
 end
 
+def pr : (cmd unit -> cmd unit) -> text -> cmd unit -> cmd actor = \atSh. \thing. \more.
+  build {
+    require "logger";
+    require "comparator"; require "calculator"; // why are these necessary?
+    atSh (provide thing (make_with more))
+  }
+end
+
+def prR : (cmd unit -> cmd unit) -> text -> text -> cmd unit -> cmd actor =
+  \atSh. \catalyst. \thing. \more.
+  p <- build {
+    require "comparator"; require "calculator"; // BUG: why are these necessary?
+    until (installed catalyst) {};
+    atSh (provide thing (make_with more))
+  };
+  install p catalyst;
+  return p
+end
+
 def deliver : actor -> text -> cmd unit = \r. \thing.
   until (ishere thing) { move };
   turn right; move; giveall r thing; turn back; move; turn left;
   until (isempty) { move }; turn back; move
 end
 
+def tendbox : (cmd unit -> cmd unit) -> dir -> (cmd unit -> cmd unit) -> (cmd unit -> cmd unit) -> text -> (cmd unit -> cmd unit) -> actor -> cmd unit
+  = \at. \d. \rows. \cols. \thing. \atSh. \r.
+    forever {
+      at (harvestbox d rows cols);
+      atSh (deliver r thing);
+    }
+end
+
 // Arguments = how to get to shingle row from base; name of thing; function to extract it
+// XXX debug this!
 def resource : (cmd unit -> cmd unit) -> text -> cmd unit -> cmd actor =
   \atShingles. \thing. \extract.
-  d <- build {depot atShingles thing};
+  d <- depot atShingles thing;
   give d thing;
   build {forever {extract; atShingles (deliver d thing)}};
   return d
 end
+
+def process_trees : (cmd unit -> cmd unit) -> actor -> actor -> cmd actor =
+  \atShingles. \logDepot. \branchDepot.
+  build {
+    atShingles (
+      until (ishere "tree") {move};
+      forever {
+        tR; m1; get "tree"; tB; m1; tR;
+        make "log";
+        m1; tR; m1; giveall logDepot "log"; tB; m1; tR;
+        m1; tR; m1; giveall branchDepot "branch"; tB; m1; tL; m2; tB
+      }
+    )
+  }
+end
+
+////////////////////////////////////////////////////////////
+// Bootstrapping providers
+////////////////////////////////////////////////////////////
+
+def make_provider_devices = \atShingles.
+  require "logger";
+  require "furnace"; require 1 "solar panel";
+  atShingles (
+    get_simple x8 "log";
+    get_simple x1 "copper ore"; make "copper wire";
+    x6 (make "board"); x10 (make "wooden gear");
+    make "teeter-totter";
+    make "comparator";
+
+    get_simple x8 "bit (0)";
+    get_simple x8 "bit (1)";
+    make "flash memory";
+    make "counter";
+    make "calculator";
+
+    get_simple x1 "LaTeX";
+    make "rubber";
+    make "strange loop";
+    make "rubber band"
+  )
+end
+
+def get_provider_devices = \atShingles.
+  atShingles (
+    get_simple x1 "comparator";
+    get_simple x1 "calculator";
+    get_simple x1 "rubber band"
+  )
+end
+
+// TODO: make version of pr that bootstraps itself by running
+// get_provider_devices, equipping the devices, then running pr.
+// Need to make a recipe for welder, make some manually first.
 
 ////////////////////////////////////////////////////////////
 // DEMO
