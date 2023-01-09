@@ -446,6 +446,11 @@ def drillbox = \d. \rep1. \rep2.
   doboxP (drill forward) d rep1 rep2 blocked
 end
 
+def clearbox = \d. \rep1. \rep2.
+  drillbox d rep1 rep2;
+  grabbox d rep1 rep2
+end
+
 // tend additionally requires strange loop
 // Usage example: tend "lambda" (atNE m5 m9)
 
