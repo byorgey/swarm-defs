@@ -29,19 +29,15 @@
 - Make a special robot just to process the trees
 - Get some bits, start bit farms, create bit depots
 - Make a drill
-  - obtain bits -> make drill bit
-  - ensure 6 copper wire
-  - ensure 70 boards  (logs yield 1:4)
-  - makeD (make two)
+  - obtain bits -> make 4 drill bits
+  - ensure 24 copper wire
+  - ensure 70 logs -> 280 boards
+  - makeD (make four: copper, iron, quartz, keep one to clear boulders)
 - Now send robot(s) to drill out mountains, identify some mines
-  - Create copper and iron ore depots, start mining & delivering
+  - Create copper, iron, quartz ore depots, start mining & delivering
 - Get some LaTeX, start LaTeX farm, create LaTeX depot
 
-- Function for manually fetching raw materials needed for
-  comparator, calculator, rubber band, and making the
-  required devices
-
-- Make providers:
+- Make bootstrap providers:
   - copper wire (need to give it a furnace)
   - strange loop
   - board (x2?)
@@ -50,7 +46,7 @@
   - comparator
   - flash memory
   - counter
-  - sand (depot / mining)
+  - sand (just put two sand next to each other instead of depot!)
   - glass (needs furnace)
   - solar panel (needs 3D printer)
   - calculator
@@ -61,14 +57,21 @@
   automatically using devices built by other providers, instead of
   from raw materials.
 
+- Make big furnace
+
+- Make scanner provider:
+  - Make silicon provider (give it big furnace)
+  - circuit provider
+  - Start pixel farms + set up pixel depots.
+  - camera
+  - scanner
+
 - Create more providers to make more drills:
   - box
   - drill bit
   - small motor
   - drill
 
-- Start pixel farms + set up pixel depots.
-- Make camera + scanner providers.
 
   - Argh, scanner needs quartz etc.!  Running out of scanners!
 
