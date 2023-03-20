@@ -665,16 +665,16 @@ def pr : (cmd unit -> cmd unit) -> text -> cmd unit -> cmd actor = \atSh. \thing
   }
 end
 
-def prR : (cmd unit -> cmd unit) -> text -> text -> cmd unit -> cmd actor =
-  \atSh. \catalyst. \thing. \more.
-  p <- build {
-    require "comparator"; require "calculator"; // BUG: why are these necessary?
-    until (installed catalyst) {};
-    atSh (provide thing (make_with more))
-  };
-  install p catalyst;
-  return p
-end
+// def prR : (cmd unit -> cmd unit) -> text -> text -> cmd unit -> cmd actor =
+//   \atSh. \catalyst. \thing. \more.
+//   p <- build {
+//     require "comparator"; require "calculator"; // BUG: why are these necessary?
+//     until (has catalyst) {};
+//     atSh (provide thing (make_with more))
+//   };
+//   install p catalyst;
+//   return p
+// end
 
 def deliver : actor -> text -> cmd unit = \r. \thing.
   until (ishere thing) { move };
@@ -718,6 +718,20 @@ end
 ////////////////////////////////////////////////////////////
 // Bootstrapping providers
 ////////////////////////////////////////////////////////////
+
+def elsif = \p. \then. \else. {if p then else} end
+
+def rmake : int -> text -> cmd unit = \n. \thing.
+  require "furnace"; require "3D printer";
+  have <- count thing;
+  let m = n - have
+  in
+  if (thing == "log" || thing == "branch" || thing == "bit (0)" || thing == "bit (1)" || thing == "LaTeX" || thing == "copper ore" || thing == "iron ore" || thing == "quartz" || thing == "sand")
+    { get_simple (x n) thing }
+  $ elsif (thing == "copper wire") { rmake (n / 10) "copper ore"; make "copper wire" }
+  $ elsif (thing == "strange loop") { rmake (2 * n) "copper wire"; make "strange loop" }
+  $ elsif (thing == "board") { rmake ((n+3)/4) "log"; x n (make "board") } {}
+end
 
 def make_provider_devices = \atShingles.
   require "logger";
@@ -768,29 +782,29 @@ def mkR = \catalyst. \thing. \more.
     provide thing (make_with more)
   }
 end
-def oracle = \thing. build {toStart; provide_raw thing create} end
+def oracle = \atSh. \thing. build {atSh (provide_raw thing create)} end
 
-def demo =
-  oracle "log";
-  oracle "rock";
-  oracle "bit (0)";
-  oracle "bit (1)";
-  oracle "copper ore";
-  oracle "iron ore";
+// def demo =
+//   oracle "log";
+//   oracle "rock";
+//   oracle "bit (0)";
+//   oracle "bit (1)";
+//   oracle "copper ore";
+//   oracle "iron ore";
 
-  mk "furnace" (g 5 "rock");
-  x4 (mk "board" (g 1 "log"));
-  x8 (mk "wooden gear" (g 2 "board"));
-  mkR "furnace" "copper wire" (g 1 "log"; g 1 "copper ore");
-  mk "box" (g 6 "board");
-  mk "small motor" (g 32 "wooden gear"; g 6 "copper wire");
-  mk "drill bit" (g 1 "bit (0)"; g 1 "bit (1)");
-  mk "drill" (g 1 "box"; g 1 "drill bit"; g 1 "small motor");
-  x4 (mkR "furnace" "iron plate" (g 1 "iron ore"; g 2 "log"));
-  x4 (mk "iron gear" (g 1 "iron plate"));
-  mk "big motor" (g 16 "iron gear"; g 6 "copper wire");
-  mk "metal drill" (g 1 "box"; g 3 "drill bit"; g 1 "big motor");
-end
+//   mk "furnace" (g 5 "rock");
+//   x4 (mk "board" (g 1 "log"));
+//   x8 (mk "wooden gear" (g 2 "board"));
+//   mkR "furnace" "copper wire" (g 1 "log"; g 1 "copper ore");
+//   mk "box" (g 6 "board");
+//   mk "small motor" (g 32 "wooden gear"; g 6 "copper wire");
+//   mk "drill bit" (g 1 "bit (0)"; g 1 "bit (1)");
+//   mk "drill" (g 1 "box"; g 1 "drill bit"; g 1 "small motor");
+//   x4 (mkR "furnace" "iron plate" (g 1 "iron ore"; g 2 "log"));
+//   x4 (mk "iron gear" (g 1 "iron plate"));
+//   mk "big motor" (g 16 "iron gear"; g 6 "copper wire");
+//   mk "metal drill" (g 1 "box"; g 3 "drill bit"; g 1 "big motor");
+// end
 
 // TODO:
 //   - way to view requirements would help
