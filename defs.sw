@@ -286,6 +286,11 @@ def x61 = \c. c; x60 c end
 def x62 = \c. x31 c; x31 c end
 def x63 = \c. c; x62 c end
 def x64 = \c. x32 c; x32 c end
+def x128 = \c. x64 c; x64 c end
+def x256 = \c. x128 c; x128 c end
+def x512 = \c. x256 c; x256 c end
+def x1024 = \c. x512 c; x512 c end
+def x2048 = \c. x1024 c; x1024 c end
 
 ////////////////////////////////////////////////////////////
 // Utilities
