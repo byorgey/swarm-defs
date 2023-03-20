@@ -400,7 +400,7 @@ def excursion : cmd unit -> cmd unit = \m.
 end
 
 // Moving + drilling.
-def tryDrill = ifC blocked { drill forward } {} end
+def tryDrill = ifC blocked { drill forward; return () } {} end
 def push : cmd unit = tryDrill; move end
 
 def drillbox = \d. \rep1. \rep2.
