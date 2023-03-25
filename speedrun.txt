@@ -2,9 +2,10 @@
 - Get 3 trees (can use grabXX now)
   - first_3_trees:
     - Make a harvester (makeH)
-    - Make a branch predictor
+    - Make a branch predictor (makeBP)
     - Plant 1 lambda UNDER the base
       - place "lambda"; build {harvest}
+  - slv
 - Harvest a few trees (~15), using harvestline or harvestbox
 - next_trees x(n-1)
 - Harvest rocks in a grid; make a furnace
