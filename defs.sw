@@ -401,12 +401,12 @@ end
 
 // Moving + drilling.
 def tryDrill = ifC blocked { drill forward; return () } {} end
-def push : cmd unit = tryDrill; move end
+def shove : cmd unit = tryDrill; move end
 
 def drillbox = \d. \rep1. \rep2.
   rep1 (
-    rep2 push; tB; rep2 move; tB;
-    turn d; push; x3 (turn d)
+    rep2 shove; tB; rep2 move; tB;
+    turn d; shove; x3 (turn d)
   );
   x3 (turn d); rep1 move; turn d
 end
