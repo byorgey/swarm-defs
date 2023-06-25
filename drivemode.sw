@@ -4,7 +4,7 @@ end
 
 def nil : a -> cmd unit = \a. return () end
 
-def go : dir -> cmd unit = \d. turn d; try {push} {move} end
+def go : dir -> cmd unit = \d. turn d; move end
 
 def drive : key -> cmd unit =
   cons (key "Up")      (go north) $
