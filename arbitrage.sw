@@ -23,7 +23,7 @@ end
 def m2 = move; move end
 
 def solution =
-  x 5 move; x 5 (grab; m2);
+  m5; x 5 (grab; m2);
   x 2 (turn left; m2);
   m5; turn right;
   x 10 (fig8 right);

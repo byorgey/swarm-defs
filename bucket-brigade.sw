@@ -44,4 +44,6 @@ def bb =
     while (has "repro kit") { give child "repro kit" };
     if (self == base) {} { pass "coal lump" }
   }
-end
+end;
+
+bb
