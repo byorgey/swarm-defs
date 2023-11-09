@@ -312,6 +312,7 @@ end
 
 def abs : int -> int = \x. if (x < 0) {-x} {x} end
 def min : int -> int -> int = \x. \y. if (x < y) {x} {y} end
+def mod : int -> int -> int = \a. \b. a - b * (a / b) end
 
 def or : bool -> bool -> bool = \x. \y. x || y end
 def and : bool -> bool -> bool = \x. \y. x && y end
