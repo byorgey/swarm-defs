@@ -1,5 +1,5 @@
 // This function does a cool math thing
-def foo : int -> int =     // This is an optional type signature
+def foo : Int -> Int =     // This is an optional type signature
   // pre
   \n. n + 1    // add one
 end
@@ -8,11 +8,11 @@ end
    block comment which
    spans multiple lines */
 
-def bar : int -> int   // Another type signature, = on the next line
+def bar : Int -> Int   // Another type signature, = on the next line
   = \x. foo /* very important to use foo here */ (foo x)   // very cool implementation
 end
 
-def baz : cmd unit =
+def baz : Cmd Unit =
   move;
   move;
   turn left;   // don't forget to turn left!

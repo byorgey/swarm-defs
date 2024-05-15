@@ -1,8 +1,11 @@
-def ifC : cmd bool -> {cmd a} -> {cmd a} -> cmd a = \test. \then. \else.
-  b <- test; if b then else
+def ifC: ∀ a. Cmd Bool -> {Cmd a} -> {Cmd a} -> Cmd a
+  = \test. \then. \else.
+  b <- test;
+  if b then else
 end
 
-def orC : cmd bool -> cmd bool -> cmd bool = \t1. \t2.
+def orC: Cmd Bool -> Cmd Bool -> Cmd Bool
+  = \t1. \t2.
   b1 <- t1;
   b2 <- t2;
   return (b1 || b2)
