@@ -530,10 +530,6 @@ def makeB = x2 (make "log"; make "board"); make "boat" end
 
 def makeBP = make "branch predictor" end
 
-def first_3_trees = makeH; makeBP; place "lambda"; build {harvest} end
-
-def t5 = first_3_trees; makeB end
-
 def grabrow = \x. x (grab; m1); tB; x m1; tB end
 
 def plantrow = \x. \thing. x (m1; place thing; harvest; return ()); tB; x m1; tB
@@ -548,20 +544,12 @@ end
 
 def get_water = \c. build {require "treads"; require "boat"; c grab} end
 
-def next_trees
-  = \n.
-  n (make "log");
-  x7 (make "branch predictor");
-  x3 (make "board"; make "workbench")
-end
-
 def makeD =
   make "box";
   x32 (make "wooden gear");
   make "small motor";
   make "drill"
 end
-
 
 ////////////////////////////////////////////////////////////
 // Pull-based manufacturing with automatic location finding
@@ -852,3 +840,40 @@ def mkR
 end
 
 def oracle = \atSh. \thing. build {atSh (provide_raw thing create)} end
+
+////////////////////////////////////////////////////////////
+// Classic mode speedrun strats
+////////////////////////////////////////////////////////////
+
+def step0 : Cmd Unit =
+  log "Please (1) Get a lambda manually (2) Get 5 trees (grabXX, grabrow) (3) run step1"
+end
+
+def step1 : Cmd Unit =
+  log "Making harvester, branch predictor, + boat...";
+  makeH; makeBP; makeB;
+  log "Planting lambda under the base...";
+  place "lambda"; build {harvest}; wait 1; slv;
+  log "Please obtain >= 15 trees using harvestline/harvestbox (save def), then run step2"
+end
+
+// def next_trees
+//   = \n.
+//   n (make "log");
+//   x7 (make "branch predictor");
+//   x3 (make "board"; make "workbench")
+// end
+
+def step2 : Cmd Unit =
+  log "Making logs, branch predictors, workbenches...";
+  x14 (make "log");
+  x7 (make "branch predictor");
+  x3 (make "board"; make "workbench");
+  log "Please grab >= 10 rocks, then run step3"
+end
+
+def step3 : Cmd Unit =
+  log "Making big furnace...";
+  make "big furnace"; equip "big furnace";
+  log "Harvest more trees, then grab some copper"
+end
