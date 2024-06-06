@@ -11,7 +11,6 @@ def tE = turn east end
 def tS = turn south end
 def tW = turn west end
 
-
 // Scan abbreviations
 def sF = scan forward end
 def sL = scan left end
@@ -293,8 +292,10 @@ end
 def abs: Int -> Int = \x. if (x < 0) {-x} {x} end
 def min: Int -> Int -> Int = \x. \y. if (x < y) {x} {y} end
 def mod: Int -> Int -> Int = \a. \b. a - b * (a / b) end
-def or: Bool -> Bool -> Bool = \x. \y. x || y end
-def and: Bool -> Bool -> Bool = \x. \y. x && y end
+def or: Bool -> Bool -> Bool = \x. \y. if x {true} {y} end
+def and: Bool -> Bool -> Bool = \x. \y. if x {y} {false} end
+
+def compose : (b -> c) -> (a -> b) -> (a -> c) = \g. \f. \x. g (f x) end
 
 // Control
 def ifC: ∀ a. Cmd Bool -> {Cmd a} -> {Cmd a} -> Cmd a
@@ -303,14 +304,21 @@ def ifC: ∀ a. Cmd Bool -> {Cmd a} -> {Cmd a} -> Cmd a
   if b then else
 end
 
-def forever: ∀ a b. {Cmd a} -> Cmd b = \c. force c; forever c end
-
-tydef CU = Cmd Unit end
-
-def x: ∀ a. Int -> Cmd a -> CU = \n. \c. if (n == 0) {} {c; x (n - 1) c}
+def andC : Cmd Bool -> Cmd Bool -> Cmd Bool = \x. \y.
+  xb <- x;
+  yb <- y;
+  return (and xb yb)
 end
 
-def while: ∀ a. Cmd Bool -> {Cmd a} -> CU
+def forever: ∀ a b. {Cmd a} -> Cmd b = \c. force c; forever c end
+
+tydef Rep = Cmd Unit -> Cmd Unit end  // x5, etc.
+tydef Ctx = Cmd Unit -> Cmd Unit end  // atNE, uL, etc.
+
+def x: ∀ a. Int -> Cmd a -> Cmd Unit = \n. \c. if (n == 0) {} {c; x (n - 1) c}
+end
+
+def while: ∀ a. Cmd Bool -> {Cmd a} -> Cmd Unit
   = \test. \body.
   ifC test {force body; while test body} {}
 end
@@ -331,7 +339,6 @@ def waitFor = \thing. until (has thing) {wait 4} end
 
 def notempty: Cmd Bool = e <- isempty; return $ if e {false} {true} end
 
-
 ////////////////////////////////////////////////////////////
 // Movement
 ////////////////////////////////////////////////////////////
@@ -341,7 +348,7 @@ def notempty: Cmd Bool = e <- isempty; return $ if e {false} {true} end
 
 // Versions that assume robot is facing N as pre/postcondition.
 // These do not require a compass.
-def moveByN: Int -> Int -> CU
+def moveByN: Int -> Int -> Cmd Unit
   = \dx. \dy.
   if (dy < 0) {tB} {};
   x (abs dy) move;
@@ -351,14 +358,14 @@ def moveByN: Int -> Int -> CU
   if (dx < 0) {tR} {tL}
 end
 
-def moveToN: Int * Int -> CU
+def moveToN: Int * Int -> Cmd Unit
   = \tgt.
   loc <- whereami;
   let dx = fst tgt - fst loc in let dy = snd tgt - snd loc in moveByN dx dy
 end
 
 // Arbitrary orientation, requires compass.
-def moveBy: Int -> Int -> CU
+def moveBy: Int -> Int -> Cmd Unit
   = \dx. \dy.
   if (dx < 0) {tW} {tE};
   x (abs dx) move;
@@ -366,13 +373,13 @@ def moveBy: Int -> Int -> CU
   x (abs dy) move
 end
 
-def moveTo: Int * Int -> CU
+def moveTo: Int * Int -> Cmd Unit
   = \tgt.
   loc <- whereami;
   let dx = fst tgt - fst loc in let dy = snd tgt - snd loc in moveBy dx dy
 end
 
-def excursion: CU -> CU
+def excursion: Cmd Unit -> Cmd Unit
   = \m.
   hdg <- heading;
   pos <- whereami;
@@ -384,19 +391,10 @@ end
 // Moving + drilling.
 def tryDrill = ifC blocked {drill forward; return ()} {} end
 
-def shove: CU = tryDrill; move end
-
-def drillbox
-  = \d. \rep1. \rep2.
-  rep1 (rep2 shove; tB; rep2 move; tB; turn d; shove; x3 (turn d));
-  x3 (turn d);
-  rep1 move;
-  turn d
-end
-
+def shove: Cmd Unit = tryDrill; move end
 
 ////////////////////////////////////////////////////////////
-// Harvesting + planting
+// Harvesting, grabbing, + drilling
 ////////////////////////////////////////////////////////////
 
 // harvestline, harvestbox, and friends require only branch predictor
@@ -411,18 +409,10 @@ def dolineP
 end
 
 def harvestline = \rep. dolineP harvest rep notempty end
-
 def grabline = \rep. dolineP grab rep notempty end
-
 def drillline = \rep. dolineP (drill forward) rep blocked end
 
-def doboxP:
-    ∀ a. Cmd a ->
-         Dir ->
-         (CU -> CU) ->
-         (CU -> CU) ->
-         Cmd Bool ->
-         CU
+def doboxP: ∀ a. Cmd a -> Dir -> Rep -> Rep -> Cmd Bool -> Cmd Unit
   = \act. \d. \rep1. \rep2. \pred.
   rep1 (dolineP act rep2 pred; turn d; move; x3 (turn d));
   x3 (turn d);
@@ -430,27 +420,9 @@ def doboxP:
   turn d
 end
 
-def harvestbox:
-    Dir ->
-    (CU -> CU) ->
-    (CU -> CU) ->
-    CU
-  = \d. \rep1. \rep2.
-  doboxP harvest d rep1 rep2 notempty
-end
-
-def grabbox:
-    Dir ->
-    (CU -> CU) ->
-    (CU -> CU) ->
-    CU
-  = \d. \rep1. \rep2.
-  doboxP grab d rep1 rep2 notempty
-end
-
+def harvestbox = \d. \rep1. \rep2. doboxP harvest d rep1 rep2 notempty end
+def grabbox = \d. \rep1. \rep2. doboxP grab d rep1 rep2 notempty end
 def drillbox = \d. \rep1. \rep2. doboxP (drill forward) d rep1 rep2 blocked end
-
-def clearbox = \d. \rep1. \rep2. drillbox d rep1 rep2; grabbox d rep1 rep2 end
 
 // tend additionally requires strange loop
 // Usage example: tend "lambda" (atNE m5 m9)
@@ -459,14 +431,37 @@ def tend
   forever {at (until (ishere thing) {wait 16}; harvest); give base thing}
 end
 
-def plant_garden:
-    Dir ->
-    (CU -> CU) ->
-    (CU -> CU) ->
-    Text ->
-    CU
+def giveall: Actor -> Text -> Cmd Unit
+  = \r. \thing.
+  while (has thing) {give r thing}
+end
+
+////////////////////////////////////////////////////////////
+// Atomic grab + place
+////////////////////////////////////////////////////////////
+
+def placeAtomic : Text -> Cmd Bool
+  = \product.
+    atomic (here <- isempty; if here {place product; return true} {return false})
+end
+
+def grabAtomic : Text -> Cmd Bool
+  = \thing.
+    atomic (b <- ishere thing; if b {grab; return true} {return false})
+end
+
+def get : Text -> Cmd Unit
+  = \thing. waitUntil (grabAtomic thing)
+end
+
+////////////////////////////////////////////////////////////
+// Fields
+////////////////////////////////////////////////////////////
+
+// Plant a rectangular box of a harvestable item.
+// Requires harvester + lambda.
+def plantField: Dir -> Rep -> Rep -> Text -> Cmd Unit
   = \d. \rows. \cols. \thing.
-  waitFor thing;
   rows (
     cols (place thing; harvest; move; return ());
     tB;
@@ -481,43 +476,243 @@ def plant_garden:
   turn d
 end
 
-def garden:
-    (CU -> CU) ->
-    Dir ->
-    (CU -> CU) ->
-    (CU -> CU) ->
-    Text ->
-    CU
-  = \at. \d. \rows. \cols. \thing.
-  planter <- build {at (plant_garden d rows cols thing)};
+// Create a rectangular box of a harvestable item at a specific location,
+// by spawning a robot to plant it.
+def buildField: Ctx -> Dir -> Rep -> Rep -> Text -> Cmd Unit
+  = \ctx. \d. \rows. \cols. \thing.
+  planter <- build {waitFor thing; ctx (plantField d rows cols thing)};
   give planter thing
 end
 
-def giveall: Actor -> Text -> CU
-  = \r. \thing.
-  while (has thing) {give r thing}
+// Tend a field, given the context of the field, direction, size, and finally
+// a command to run in between each harvesting loop (i.e. to deliver the produce).
+def tendField: Ctx -> Dir -> Rep -> Rep -> Cmd Unit -> Cmd Unit
+  = \ctx. \d. \rows. \cols. \deliver.
+  forever {ctx (harvestbox d rows cols); deliver}
 end
-
 
 ////////////////////////////////////////////////////////////
-// Pull-based manufacturing
+// Shingle row stragegy
 ////////////////////////////////////////////////////////////
-def place_atomic
-  = \product.
-  atomic (here <- isempty; if here {place product; return true} {return false})
+
+/* There is a single row of "shingles" which are entities placed on
+   the ground to advertise the availability of a certain resource.
+   Robots sit next to the shingles and respond to requests for the
+   resource.
+*/
+
+//////////////////////////////////////////////////
+// Shingle utilities
+//////////////////////////////////////////////////
+
+// In the context of the shingle row, find the provider
+// for a given item.
+def findProvider : Text -> Cmd Unit = \thing.
+  until (ishere thing) {move};
+  turn right; move
 end
 
-def grab_atomic
-  = \thing.
-  atomic (b <- ishere thing; if b {grab; return true} {return false})
+// Return from a provider to the shingle context.
+def returnFromProvider : Cmd Unit =
+  turn back; move; turn left;
+  until isempty {move};
+  turn back; move
 end
 
-def get = \thing. waitUntil (grab_atomic thing) end
+// In the context of the shingle row, carry out an action at the
+// provider of a specific item.
+def atProvider : Text -> Cmd Unit -> Cmd Unit = \thing. \action.
+  findProvider thing; action; returnFromProvider
+end
 
+// In the shingle context, get some items from their provider.
+def getProvided : Rep -> Text -> Cmd Unit = \rep. \thing.
+  atProvider thing (rep (get thing))
+end
+
+//////////////////////////////////////////////////
+// Depots
+//////////////////////////////////////////////////
+
+/* A depot robot:
+     1. Goes to the shingles row
+     2. Finds the first empty spot in the row
+     3. Places one item there
+     4. Sits next to it and provides the resource.
+   The depot never tries to obtain more of the resource, it just
+   assumes the resource will be given to it.  It also does a simple
+   'place' instead of 'place_atomic' (which requires XXX). Useful
+   earlier in the game for collecting basic resources, but have to
+   be careful you don't send several out at once.
+*/
+def depotHere: Text -> Cmd Unit = \thing.
+  // setname (thing ++ " depot");
+  forever {waitWhile (ishere thing); waitFor thing; place thing}
+end
+
+def buildDepot: Ctx -> Text -> Cmd Actor
+  = \atShingles. \thing.
+  waitFor thing;
+  depot <- build {
+    require "grabber";  // make sure we get a grabber and not a harvester!
+    waitFor thing;
+    atShingles (
+      until isempty {move};
+      place thing;
+      turn right;
+      move;
+      depotHere thing
+    )
+  };
+  give depot thing;
+  return depot
+end
+
+//////////////////////////////////////////////////
+// Delivery + farming
+//////////////////////////////////////////////////
+
+// Deliver all of the specified item to the given robot (a depot).
+// Should be executed in the context of the shingle row.
+def deliver : Actor -> Text -> Cmd Unit
+  = \r. \thing. atProvider thing (giveall r thing);
+end
+
+/* Create a farm:
+   - Builds a depot to hold produce
+   - Builds a robot to plant the field and then
+     tend it, delivering items to the depot
+
+   Arguments are: shingle context, field context, direction, and size;
+   item to plant/harvest.
+
+   Returns a reference to the depot.
+*/
+def buildFarm : Ctx -> Ctx -> Dir -> Rep -> Rep -> Text -> Cmd Actor
+  = \atShingles. \atFarm. \d. \rows. \cols. \thing.
+  log "Make sure you have two of the item...";
+  depot <- buildDepot atShingles thing;
+  waitFor thing;
+  worker <- build {
+    waitFor thing;
+    atFarm (plantField d rows cols thing);
+    tendField atFarm d rows cols (atShingles (deliver depot thing));
+  };
+  give worker thing;
+  return depot
+end
+
+// Build a standard (right, 8x4) farm.
+def buildStdFarm : Ctx -> Ctx -> Text -> Cmd Actor
+  = \atShingles. \atFarm. \thing.
+  buildFarm atShingles atFarm right x8 x4 thing
+end
+
+// Defining relative contexts one standard farm width away.
+// E.g. could define the context for a new farm to be 'rightOf atFarm'
+// if 'atFarm' is the context for the tree farm.
+def above : Ctx -> Ctx = \at. compose at (atN m4) end
+def rightOf : Ctx -> Ctx = \at. compose at (atE m8) end
+def leftOf : Ctx -> Ctx = \at. compose at (atW m8) end
+def below : Ctx -> Ctx = \at. compose at (atS m4) end
+
+//////////////////////////////////////////////////
+// Tree processing
+//////////////////////////////////////////////////
+
+// In the shingles context, process trees by getting them from the
+// tree provider, processing them into logs and branches, and delivering
+// to the log and branch depots (which must already exist).
+//
+// Arguments are log and branch depots.
+def processTrees : Actor -> Actor -> Cmd Unit = \logDepot. \branchDepot.
+  forever {
+    getProvided x4 "tree";
+    x4 (make "log");
+    deliver logDepot "log";
+    deliver branchDepot "branch";
+  }
+end
+
+// Build a tree processing pipeline.  A tree depot must already exist.
+// Returns a reference to the processor robot.
+def buildTreeProcess : Ctx -> Cmd Actor = \atShingles.
+  logDepot <- buildDepot atShingles "log";
+  branchDepot <- buildDepot atShingles "branch";
+  build { atShingles (processTrees logDepot branchDepot) }
+end
+
+//////////////////////////////////////////////////
+// Mining
+//////////////////////////////////////////////////
+
+// Create a depot for ore and a miner.  Arguments are the shingles
+// context, mine context, rock depot, and ore name.  Returns a reference to the depot.
+def buildMine : Ctx -> Ctx -> Actor -> Text -> Cmd Actor = \atShingles. \atMine. \rockDepot. \ore.
+  depot <- buildDepot atShingles ore;
+  build {
+    forever {
+      atMine (x16 (drill down); return ());
+      atShingles (deliver depot ore; deliver rockDepot "rock")
+    }
+  }
+end
+
+//////////////////////////////////////////////////
+// Bootstrapping
+//////////////////////////////////////////////////
+
+// All these are to be executed in the shingles context.
+
+def getBranchPredictor : Cmd Unit =
+  getProvided x2 "branch"; make "branch predictor"
+end
+
+def getHarvester : Cmd Unit =
+  getProvided x3 "log";
+  x3 (make "board");
+  make "box";
+  x2 (make "wooden gear");
+  make "harvester"
+end
+
+def get5StrangeLoops : Cmd Unit =
+  hf <- has "furnace";
+  if hf {} {getProvided x5 "rock"; make "furnace"};
+  getProvided x1 "copper ore"; getProvided x1 "log"; make "copper wire";
+  x5 (make "strange loop")
+end
+
+def getWelder : Cmd Unit =
+  require "furnace";
+  getProvided x5 "log";
+  getProvided x2 "copper ore";
+  make "copper wire"; make "copper pipe";
+  getProvided x1 "iron ore"; make "iron plate";
+  getProvided x1 "LaTeX"; make "rubber";
+  make "I/O cable";
+  make "welder"
+end
+
+def getBigMotor : Cmd Unit =
+  getProvided x5 "rock"; make "furnace";
+  getProvided x9 "log";
+  getProvided x4 "iron ore"; x4 (make "iron plate"); x8 (make "iron gear");
+  getProvided x1 "copper ore"; make "copper wire";
+  make "big motor"
+end
+
+def getMetalDrill : Cmd Unit =
+  getProvided x2 "log"; x2 (make "board"); make "box";
+  getProvided x3 "bit (0)"; getProvided x3 "bit (1)"; x3 (make "drill bit");
+  getBigMotor;
+  make "metal drill"
+end
 
 ////////////////////////////////////////////////////////////
 // Utilities + specific steps for speedrun strategies
 ////////////////////////////////////////////////////////////
+
 def makeH =
   x3 (make "log");
   x3 (make "board");
@@ -551,298 +746,31 @@ def makeD =
   make "drill"
 end
 
-////////////////////////////////////////////////////////////
-// Pull-based manufacturing with automatic location finding
-////////////////////////////////////////////////////////////
-def depot_here: Text -> CU
-  = \thing.
-
-  // setname (thing ++ " depot");
-  forever {waitWhile (ishere thing); waitFor thing; place thing}
+// In case we drill out a quartz mine but don't note its location, since it looks
+// the same as a mountain tunnel.
+//
+// Run this like   atXX (findQuartzMines right xM xN)  to search for quartz mines
+// within an MxN box in context XX.  Will create a pattern of gears on the ground
+// in the adjacent MxN box in direction d corresponding to the locations of quartz mines.
+def findQuartzMines = \d. \rows. \cols.
+  require 5 "wooden gear";
+  doboxP (turn d; rows move; place "wooden gear"; tB; rows move; x3 (turn d))
+    d rows cols (isHere "quartz mine")
 end
 
-def provide_here: Text -> (Text -> CU) -> CU
-  = \thing. \get_more.
-
-  // setname (thing ++ " provider");
-  forever {
-    while (has thing) {waitWhile (ishere thing); place_atomic thing};
-    get_more thing
-  }
-end
-
-def provide_row: Text -> (Text -> CU) -> CU
-  = \thing. \get_more.
-  until (liftA2 or (ishere thing) (place_atomic thing)) {move};
-  turn right;
-  move;
-  provide_here thing get_more
-end
-
-def find_row: Text -> CU
-  = \thing.
-  ifC (ishere thing) {} {
-    ifC isempty {turn back; move; until isempty {move}; turn back} {};
-    move;
-    find_row thing
-  }
-end
-
-def get_simple: (CU -> CU) -> Text -> CU
-  = \rep. \thing.
-  until (ishere thing) {move};
-  turn right;
-  move;
-  rep (get thing);
-  turn back;
-  move;
-  turn left;
-  until isempty {move};
-  turn back;
-  move
-end
-
-def get_row: Int -> Text -> CU
-  = \n. \thing.
-  find_row thing;
-  turn right;
-  move;
-  x n (get thing);
-  turn back;
-  move;
-  turn left;
-  until isempty {move};
-  turn back;
-  move
-end
-
-def make_with: CU -> Text -> CU
-  = \get_ingrs. \thing.
-  get_ingrs;
-  make thing
-end
-
-
-////////////////////////////////////////////////////////////
-// One-row strategy
-////////////////////////////////////////////////////////////
-// depot command which acts like provide_raw but (1) never tries to
-// get more, and (2) does a simple 'place' instead of 'atomic_place'
-// (which requires ADT calculator).  Useful earlier in the game for
-// collecting basic resources, but have to be careful you don't send
-// several out at once.
-def depot: (CU -> CU) -> Text -> Cmd Actor
-  = \atShingles. \thing.
-  d <- build {
-    waitFor thing;
-    atShingles (
-      until isempty {move};
-      place thing;
-      turn right;
-      move;
-      depot_here thing
-    )
+def getMithril : Ctx -> Ctx -> Cmd Unit = \atShingles. \atDeep.
+  build { atShingles getMetalDrill; give base "metal drill" };
+  waitFor "metal drill";
+  build {
+    require "metal drill";
+    atDeep (until (has "mithril") {drill down});
+    give base "mithril"
   };
-  give d thing;
-  return d
+  salvage
 end
-
-def provide_raw: Text -> (Text -> CU) -> CU
-  = \thing. \more.
-  unless (has thing) {more thing} {};
-  provide_row thing more
-end
-
-def provide: Text -> (Text -> CU) -> CU
-  = \thing. \more.
-  unless (has thing) {more thing} {};
-  provide_row thing (
-    \t. turn back;
-    move;
-    turn right;
-    more thing;
-    find_row thing;
-    turn right;
-    move
-  )
-end
-
-def pr: (CU -> CU) -> Text -> CU -> Cmd Actor
-  = \atSh. \thing. \more.
-  build {
-    require "logger";
-    require "comparator";
-    require "calculator" // why are these necessary?
-    ;
-    atSh (provide thing (make_with more))
-  }
-end
-
-
-// def prR : (cmd unit -> cmd unit) -> text -> text -> cmd unit -> cmd actor =
-//   \atSh. \catalyst. \thing. \more.
-//   p <- build {
-//     require "comparator"; require "calculator"; // BUG: why are these necessary?
-//     until (has catalyst) {};
-//     atSh (provide thing (make_with more))
-//   };
-//   install p catalyst;
-//   return p
-// end
-def deliver: Actor -> Text -> CU
-  = \r. \thing.
-  until (ishere thing) {move};
-  turn right;
-  move;
-  giveall r thing;
-  turn back;
-  move;
-  turn left;
-  until isempty {move};
-  turn back;
-  move
-end
-
-def tendbox:
-    (CU -> CU) ->
-    Dir ->
-    (CU -> CU) ->
-    (CU -> CU) ->
-    Text ->
-    (CU -> CU) ->
-    Actor ->
-    CU
-  = \at. \d. \rows. \cols. \thing. \atSh. \r.
-  forever {at (harvestbox d rows cols); atSh (deliver r thing)}
-end
-
-
-// Arguments = how to get to shingle row from base; name of thing; function to extract it
-// XXX debug this!
-def resource: (CU -> CU) -> Text -> CU -> Cmd Actor
-  = \atShingles. \thing. \extract.
-  d <- depot atShingles thing;
-  give d thing;
-  build {forever {extract; atShingles (deliver d thing)}};
-  return d
-end
-
-def process_trees: (CU -> CU) -> Actor -> Actor -> Cmd Actor
-  = \atShingles. \logDepot. \branchDepot.
-  build {
-    atShingles (
-      until (ishere "tree") {move};
-      forever {
-        tR;
-        m1;
-        get "tree";
-        tB;
-        m1;
-        tR;
-        make "log";
-        m1;
-        tR;
-        m1;
-        giveall logDepot "log";
-        tB;
-        m1;
-        tR;
-        m1;
-        tR;
-        m1;
-        giveall branchDepot "branch";
-        tB;
-        m1;
-        tL;
-        m2;
-        tB
-      }
-    )
-  }
-end
-
 
 ////////////////////////////////////////////////////////////
-// Bootstrapping providers
-////////////////////////////////////////////////////////////
-def elsif = \p. \then. \else. {if p then else} end
-
-def rmake: Int -> Text -> CU
-  = \n. \thing.
-  require "furnace";
-  require "3D printer";
-  have <- count thing;
-  let m = n - have in
-  if (
-    thing == "log" || thing == "branch" || thing == "bit (0)" || thing == "bit (1)" || thing == "LaTeX" || thing == "copper ore" || thing == "iron ore" || thing == "quartz" || thing == "sand"
-  ) {get_simple (x n) thing} $ elsif (thing == "copper wire") {
-    rmake (n / 10) "copper ore";
-    make "copper wire"
-  } $ elsif (thing == "strange loop") {
-    rmake (2 * n) "copper wire";
-    make "strange loop"
-  } $ elsif (thing == "board") {
-    rmake ((n + 3) / 4) "log";
-    x n (make "board")
-  } {}
-end
-
-def make_provider_devices
-  = \atShingles.
-  require "logger";
-  require "furnace";
-  require 1 "solar panel";
-  atShingles (
-    get_simple x8 "log";
-    get_simple x1 "copper ore";
-    make "copper wire";
-    x6 (make "board");
-    x10 (make "wooden gear");
-    make "teeter-totter";
-    make "comparator";
-    get_simple x8 "bit (0)";
-    get_simple x8 "bit (1)";
-    make "flash memory";
-    make "counter";
-    make "calculator";
-    get_simple x1 "LaTeX";
-    make "rubber";
-    make "strange loop";
-    make "rubber band"
-  )
-end
-
-def get_provider_devices
-  = \atShingles.
-  atShingles (
-    get_simple x1 "comparator";
-    get_simple x1 "calculator";
-    get_simple x1 "rubber band"
-  )
-end
-
-
-// TODO: make version of pr that bootstraps itself by running
-// get_provider_devices, equipping the devices, then running pr.
-// Need to make a recipe for welder, make some manually first.
-////////////////////////////////////////////////////////////
-// DEMO
-////////////////////////////////////////////////////////////
-def toStart = move end
-
-def g = get_row end
-
-def mk = \thing. \more. build {toStart; provide thing (make_with more)} end
-
-def mkR
-  = \catalyst. \thing. \more.
-  build {toStart; g 1 catalyst; equip catalyst; provide thing (make_with more)}
-end
-
-def oracle = \atSh. \thing. build {atSh (provide_raw thing create)} end
-
-////////////////////////////////////////////////////////////
-// Classic mode speedrun strats
+// Classic mode automation
 ////////////////////////////////////////////////////////////
 
 def step0 : Cmd Unit =
@@ -854,26 +782,125 @@ def step1 : Cmd Unit =
   makeH; makeBP; makeB;
   log "Planting lambda under the base...";
   place "lambda"; build {harvest}; wait 1; slv;
-  log "Please obtain >= 15 trees using harvestline/harvestbox (save def), then run step2"
+  log "Please obtain >= 18 trees using harvestline/harvestbox (save def), then run step2"
 end
 
-// def next_trees
-//   = \n.
-//   n (make "log");
-//   x7 (make "branch predictor");
-//   x3 (make "board"; make "workbench")
-// end
-
 def step2 : Cmd Unit =
-  log "Making logs, branch predictors, workbenches...";
-  x14 (make "log");
-  x7 (make "branch predictor");
+  log "Making logs, branch predictors, workbenches, + a second harvester...";
+  x15 (make "log");
+  x9 (make "branch predictor");
+  equip "branch predictor";
   x3 (make "board"; make "workbench");
-  log "Please grab >= 10 rocks, then run step3"
+  makeH;
+  log "Please grab 5 rocks, harvest more trees, >= 4 copper ore, then run step3"
 end
 
 def step3 : Cmd Unit =
-  log "Making big furnace...";
-  make "big furnace"; equip "big furnace";
-  log "Harvest more trees, then grab some copper"
+  log "Making furnace...";
+  make "furnace"; equip "furnace";
+  log "Making copper wire and strange loops...";
+  while (andC (has "copper ore") (has "log")) {
+    make "copper wire"
+  };
+  x20 (make "strange loop");
+  log "Building lambda harvester...";
+  build {tend "lambda" (\c.c)};
+  log "Building extra harvester..."; makeH;
+  log "Please (1) harvest more trees, (2) get 2 LaTeX, (3) define shingle context + farm context (maybe clear some land first), (4) ensure you have >= 5 lambdas, then (5) run step4 with contexts."
 end
+
+// Prep for farms.  Gets 2 branch predictors + 1 harvester per farm.
+def prepFarms1 : Ctx -> Rep -> Cmd Actor = \atShingles. \rep.
+  fetcher <- build {
+    atShingles (
+      rep (x2 getBranchPredictor; getHarvester)
+    )
+  }
+end
+
+def step4 : Ctx -> Ctx -> Cmd Unit = \atShingles. \atFarm.
+  buildStdFarm atShingles atFarm "tree";
+  x4 (make "log");
+  x2 (make "rubber"; make "rubber band");
+  buildTreeProcess atShingles;
+  prepFarms1 atShingles x2;
+  log "Please (1) salvage fetcher bot (2) ensure >= 4 strange loops (3) get two of each bit and start bit farms (4) ensure 24 copper wire, then run step5 atShingles."
+end
+
+def step5 : Ctx -> Cmd Unit = \atShingles.
+  log "Obtaining devices and materials for mining operations...";
+  fetcher <- build {
+    require 24 "copper wire";
+    atShingles (
+      getProvided x4 "bit (0)";
+      getProvided x4 "bit (1)";
+      x4 (make "drill bit");
+      getProvided x64 "log"; x64 (make "board");
+      getProvided x6 "log"; x6 (make "board");
+      x4 makeD;
+
+      getProvided x14 "branch"; x7 (make "branch predictor");  // for the rock depot + 3 mines
+    )
+  };
+  log "Please (1) salvage drill fetcher robot (2) ensure 7 strange loops (3) build rock depot (save reference) (4) drill mountains (5) define contexts for mines and run buildMine for each, (6) run step6."
+end
+
+// Prep for farms, once we have copper + rock depots.  Gets 2 branch
+// predictors + 1 harvester + 5 strange loops per farm (we only need 2
+// strange loops per farm, but at this point it's easier to just make
+// too many than to calculate the correct number, since we don't yet
+// have anything like a calculator or counter etc.)
+def prepFarms2 : Ctx -> Rep -> Cmd Actor = \atShingles. \rep.
+  fetcher <- build {
+    atShingles (
+      rep (x2 getBranchPredictor; getHarvester; get5StrangeLoops)
+    )
+  }
+end
+
+def step6 : Ctx -> Cmd Unit = \atShingles.
+  prepFarms2 atShingles x1;
+  log "Please (1) salvage fetcher robot (2) get 2 LaTeX (3) build LaTeX farm (4) run step7"
+end
+
+// def step7 : Ctx -> Cmd Unit = \atShingles.
+
+// end
+
+/*
+
+Make pool of robots that can automatically build things by recipe (rmake).
+  - Have them fetch + build all devices, equip on themselves, then go idle
+  - right next to the base?
+
+  - What devices are needed by rmake?
+    - 3D printer
+      - 4 circuit
+      - 1 iron plate
+      - 3 copper pipe
+      - 16 iron gear
+    - calculator
+    - branch predictor
+    - clock
+    - comparator
+    - counter
+    - dictionary
+    - grabber
+    - rubber band
+    - furnace
+    - lambda
+    - scanner
+    - solar panel
+    - strange loop (5)
+    - treads
+    - workbench
+
+    - circuit (4)
+    - iron plate (1)
+    - copper pipe (3)
+    - iron gear (16)
+    - silicon (16)
+    - copper wire (64)
+    - bit0 (32)
+    - bit1 (32)
+*/
