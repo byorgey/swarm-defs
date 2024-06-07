@@ -709,6 +709,43 @@ def getMetalDrill : Cmd Unit =
   make "metal drill"
 end
 
+// needs pull-based provider for silicon, with big furnace
+
+def getCircuit : Cmd Unit =
+  getProvided x4 "silicon";
+  hf <- has "furnace";
+  if hf {} {getProvided x5 "rock"; make "furnace"};
+  getProvided x2 "copper ore";
+  getProvided x2 "log";
+  x2 (make "copper wire");
+  make "strange loop";
+  getProvided x8 "bit (0)";
+  getProvided x8 "bit (1)"
+end
+
+// Needs sand provider (just put some sand down)
+
+def getGlass : Cmd Unit =
+  hf <- has "furnace";
+  if hf {} {getProvided x5 "rock"; make "furnace"};
+  getProvided x1 "sand";
+  make "glass"
+end
+
+// Needs pixel farm/providers
+
+def getCamera : Cmd Unit =
+  getGlass;
+  getProvided x10 "pixel (R)";
+  getProvided x10 "pixel (G)";
+  getProvided x10 "pixel (B)";
+  make "camera"
+end
+
+def getScanner : Cmd Unit =
+  getCamera; getCircuit; make "scanner"
+end
+
 ////////////////////////////////////////////////////////////
 // Utilities + specific steps for speedrun strategies
 ////////////////////////////////////////////////////////////
