@@ -709,6 +709,18 @@ def getMetalDrill : Cmd Unit =
   make "metal drill"
 end
 
+def getFlashMemory : Cmd Unit =
+  getProvided x8 "bit (0)";
+  getProvided x8 "bit (1)";
+  make "flash memory"
+end
+
+def getCounter : Cmd Unit =
+  getFlashMemory;
+  getProvided x4 "log"; x4 (make "board"); x8 (make "wooden gear");
+  make "counter"
+end
+
 // needs pull-based provider for silicon, with big furnace
 
 def getCircuit : Cmd Unit =
@@ -730,6 +742,21 @@ def getGlass : Cmd Unit =
   if hf {} {getProvided x5 "rock"; make "furnace"};
   getProvided x1 "sand";
   make "glass"
+end
+
+def getSolarPanel : Cmd Unit =
+  require "3D printer";
+  getGlass;
+  getProvided x1 "copper ore";
+  getProvided x1 "log";
+  x1 (make "copper wire");
+  make "solar panel"
+end
+
+def getCalculator : Cmd Unit =
+  getCounter;
+  getSolarPanel;
+  make "calculator"
 end
 
 // Needs pixel farm/providers
