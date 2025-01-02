@@ -203,7 +203,7 @@ def scanWS = \x. \y. atWS x y sA end
 ////////////////////////////////////////////////////////////
 
 // Simple repetition using only lambda
-def x0 = \c. noop end
+def x0 = \_. noop end
 def x1 = \c. c end
 def x2 = \c. c; c end
 def x3 = \c. c; x2 c end
