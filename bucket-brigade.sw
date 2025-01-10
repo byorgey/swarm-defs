@@ -1,22 +1,14 @@
-def fmap: ∀ a b. (a -> b) -> Cmd a -> Cmd b
-  = \f. \x.
-  a <- x;
-  return (f a)
-end
+def fmap: ∀ a b. (a -> b) -> Cmd a -> Cmd b = \f. \x. a <- x; pure (f a) end
 
-def ifC: ∀ a. Cmd Bool -> {Cmd a} -> {Cmd a} -> Cmd a
+def ifC: ∀ a. Cmd Bool -> {Cmd a} -> {Cmd a} -> Cmd a 
   = \test. \then. \else.
   b <- test;
   if b then else
 end
 
-def forever: ∀ a b. {Cmd a} -> Cmd b
-  = \c.
-  force c;
-  forever c
-end
+def forever: ∀ a b. {Cmd a} -> Cmd b = \c. force c; forever c end
 
-def while: ∀ a. Cmd Bool -> {Cmd a} -> Cmd Unit
+def while: ∀ a. Cmd Bool -> {Cmd a} -> Cmd Unit 
   = \test. \body.
   ifC test {force body; while test body} {}
 end
@@ -25,10 +17,7 @@ def until = \test. while (fmap not test) end
 
 def waitUntil = \test. until test {wait 1} end
 
-def pass
-  = \thing.
-  forever {waitUntil (has thing); give parent thing}
-end
+def pass = \thing. forever {waitUntil (has thing); give parent thing} end
 
 def bb =
   log "hi!";
@@ -37,7 +26,8 @@ def bb =
     make "bucketwheel excavator";
     forever {drill down; give parent "coal lump"}
   } {
-    make "solar panel"; // unpack repro kit
+    make "solar panel" // unpack repro kit
+    ;
     child <- build {
       require "scanner";
       require "ADT calculator";
@@ -60,6 +50,6 @@ def bb =
     while (has "repro kit") {give child "repro kit"};
     if (self == base) {} {pass "coal lump"}
   }
-end;
+end
 
 bb

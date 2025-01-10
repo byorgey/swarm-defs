@@ -1,17 +1,14 @@
-def while: Cmd Bool -> Cmd Unit -> Cmd Unit
+def while: Cmd Bool -> Cmd Unit -> Cmd Unit 
   = \test. \body.
   b <- test;
   if b {body; while test body} {}
 end
 
-def opposite: Dir -> Dir = \d. if (d == left) {right} {left}
-end
+def opposite: Dir -> Dir = \d. if (d == left) {right} {left} end
 
-def pushUntilBlocked: Cmd Unit =
-  try {push; pushUntilBlocked} {}
-end
+def pushUntilBlocked: Cmd Unit = try {push; pushUntilBlocked} {} end
 
-def goToNook: Dir -> Int -> Cmd Unit
+def goToNook: Dir -> Int -> Cmd Unit 
   = \d. \n.
   if (n == 0) {turn (opposite d); move; turn back} {
     turn d;
@@ -20,17 +17,10 @@ def goToNook: Dir -> Int -> Cmd Unit
   }
 end
 
-def center: Cmd Unit =
-  turn right;
-  move;
-  turn left;
-  move;
-  turn right;
-  move;
-  move
+def center: Cmd Unit = turn right; move; turn left; move; turn right; move; move
 end
 
-def assistant: Int -> Cmd Unit
+def assistant: Int -> Cmd Unit 
   = \n.
   goToNook left n;
   watch forward;
@@ -50,12 +40,9 @@ def assistant: Int -> Cmd Unit
   pushUntilBlocked
 end
 
-def x: Int -> Cmd Unit -> Cmd Unit
-  = \n. \c.
-  if (n == 0) {} {c; x (n - 1) c}
-end
+def x: Int -> Cmd Unit -> Cmd Unit = \n. \c. if (n == 0) {} {c; x (n - 1) c} end
 
-def for: Int -> (Int -> Cmd Unit) -> Cmd Unit
+def for: Int -> (Int -> Cmd Unit) -> Cmd Unit 
   = \n. \c.
   if (n == 0) {} {c n; for (n - 1) c}
 end
@@ -82,7 +69,7 @@ def solution: Cmd Unit =
   x 2 move;
   turn right;
   pushUntilBlocked;
-  for 5 (\k. build {assistant (k - 1)}; return ());
+  for 5 (\k. build {assistant (k - 1)}; pure ());
   turn back;
   pushUntilBlocked;
   turn right;

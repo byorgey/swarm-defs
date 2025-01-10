@@ -6,10 +6,10 @@ def m3 = move; move; move end
 
 def blocked_left: Cmd Bool =
   r <- scan left;
-  case r (\_. return false) (\_. return true)
+  case r (\_. pure false) (\_. pure true)
 end
 
-def try_all: Int -> Cmd Unit
+def try_all: Int -> Cmd Unit 
   = \n.
   if (n == 0) {} {
     x3 (
@@ -21,7 +21,7 @@ def try_all: Int -> Cmd Unit
         move;
         turn back;
         drill down;
-        return ()
+        pure ()
       } {}
     )
   }

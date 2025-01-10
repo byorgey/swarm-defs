@@ -1,2 +1,3 @@
-def f = a <- scan down end;
-let a = 2 in f; return (a+1)
+def f = a <- scan down; pure a end
+
+let a = 2 in f; pure (a + 1)

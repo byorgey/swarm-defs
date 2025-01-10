@@ -1,11 +1,4 @@
-def go
-  = \n.
-  if (n > 0) {
-    i <- return n;
-    s <- go (n - 1);
-    return (s + i)
-  }
-  {return 0}
-end;
+def go = \n. if (n > 0) {i <- pure n; s <- go (n - 1); pure (s + i)} {pure 0}
+end
 
 go 4

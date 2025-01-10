@@ -1,10 +1,6 @@
-def forever: ∀ a b. {Cmd a} -> Cmd b
-  = \c.
-  force c;
-  forever c
-end
+def forever: ∀ a b. {Cmd a} -> Cmd b = \c. force c; forever c end
 
-def ifC: ∀ a. Cmd Bool -> {Cmd a} -> {Cmd a} -> Cmd a
+def ifC: ∀ a. Cmd Bool -> {Cmd a} -> {Cmd a} -> Cmd a 
   = \test. \then. \else.
   b <- test;
   if b then else
@@ -39,19 +35,6 @@ def frenzy =
 end
 
 def frenzy2 =
-  build {
-    forever {
-      create "tree";
-      busyWhile (ishere "tree");
-      place "tree"
-    }
-  };
-  build {
-    forever {
-      busyUntil (ishere "tree");
-      harvest;
-      n <- random 4;
-      wait n
-    }
-  }
+  build {forever {create "tree"; busyWhile (ishere "tree"); place "tree"}};
+  build {forever {busyUntil (ishere "tree"); harvest; n <- random 4; wait n}}
 end

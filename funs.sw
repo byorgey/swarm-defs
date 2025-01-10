@@ -36,11 +36,11 @@ def x512 = \c. x256 c; x256 c end
 def x1024 = \c. x512 c; x512 c end
 def craft = make "furnace"; (let lg = make "log" in lg;lg;lg;lg;lg); make "copper wire"; x4 (make "strange loop"); make "branch predictor"; x4 (make "board") end
 // ; x2 (make "boat")
-def forever : cmd () -> cmd () = \c. c ; forever c end
-def harvest_lambdas : cmd () = forever (lambdas; wait 1280) end
-def ifC : forall a. cmd bool -> cmd a -> cmd a -> cmd a =
+def forever : Cmd () -> Cmd () = \c. c ; forever c end
+def harvest_lambdas : Cmd () = forever (lambdas; wait 1280) end
+def ifC : forall a. Cmd Bool -> Cmd a -> Cmd a -> Cmd a =
   \test. \thn. \els. b <- test; if b thn els end
-def dfs : cmd () = {
+def dfs : Cmd () = {
   ifC (ishere "tree") {
     grab;
     turn west;
@@ -50,21 +50,21 @@ def dfs : cmd () = {
   } {}
 }
 end
-def while : cmd bool -> cmd () -> cmd () =
+def while : Cmd Bool -> Cmd () -> Cmd () =
   \test. \body. ifC test {body ; while test body} {} end
-def forest : cmd () = {
+def forest : Cmd () = {
   turn south; move; turn west; m4; move; dfs; turn east; m4; move; turn north; move; x64 (give "base" "tree")
 }
 end
-def harvest_forest : cmd () = forever {forest; wait 1024} end
-def harvest_bits : cmd () = forever {
+def harvest_forest : Cmd () = forever {forest; wait 1024} end
+def harvest_bits : Cmd () = forever {
   bit0;
   wait 512;
   bit1;
   wait 512
 }
 end
-def build_harvesters : cmd () = {
+def build_harvesters : Cmd () = {
   build "hf" {{harvest_forest}};
   build "hl" {{harvest_lambdas}};
   build "hb" {{harvest_bits}};
@@ -76,7 +76,7 @@ end
 //   install n_ "boat";
 //   return n_
 // end
-def gotoX : int -> cmd () = \tgt.
+def gotoX : Int -> Cmd () = \tgt.
   cur <- whereami;
   if (fst cur == tgt)
     {}
@@ -87,7 +87,7 @@ def gotoX : int -> cmd () = \tgt.
      gotoX tgt
     )
 end
-def gotoY : int -> cmd () = \tgt.
+def gotoY : Int -> Cmd () = \tgt.
   cur <- whereami;
   if (snd cur == tgt)
     {}
@@ -98,7 +98,7 @@ def gotoY : int -> cmd () = \tgt.
      gotoY tgt
     )
 end
-def goto : int -> int -> cmd () = \x. \y. gotoX x; gotoY y; gotoX x; gotoY y end
+def goto : Int -> Int -> Cmd () = \x. \y. gotoX x; gotoY y; gotoX x; gotoY y end
 def toWater = {turn right; m2; turn right; m16; m4; m2; move} end
 def startup =
   build "t" {{trees; selfdestruct}};

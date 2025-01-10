@@ -1,4 +1,4 @@
-def for_each_bit : Int -> Int -> (Int -> Int -> Cmd a) -> Cmd Unit
+def for_each_bit: Int -> Int -> (Int -> Int -> Cmd a) -> Cmd Unit 
   = \i. \xs. \act.
   if (xs == 0) {} {
     let ht = (xs - 2 * (xs / 2), xs / 2) in

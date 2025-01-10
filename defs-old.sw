@@ -103,13 +103,13 @@ end
 
 
 // Execute this *from* the depot, i.e.  atDepot (mine ...)
-def mine
+def mine 
   = \thing. \atMine. \r.
   setname (thing ++ " miner");
   forever {atMine (x16 (drill down)); giveall r thing}
 end
 
-def transport
+def transport 
   = \thing. \x1. \y1. \r. \x2. \y2.
   moveByN x1 y1;
   forever {
@@ -122,16 +122,12 @@ end
 
 
 // Making specific things needed for bootstrapping
-def make_counter
+def make_counter 
   = \atB0. \atB1.
-  build {
-    atB0 (x8 (get "bit (0)"));
-    atB1 (x8 (get "bit (1)"));
-    make "counter"
-  }
+  build {atB0 (x8 (get "bit (0)")); atB1 (x8 (get "bit (1)")); make "counter"}
 end
 
-def make_comparator
+def make_comparator 
   = \atLog. \atCopper.
   r <- build {
     wait 3;
@@ -147,7 +143,7 @@ def make_comparator
   give r "furnace"
 end
 
-def prep_provider
+def prep_provider 
   = \atLog. \atBranch. \atCopper. \atB0. \atB1.
   r <- build {
     wait 5;
@@ -171,10 +167,10 @@ def prep_provider
   give r "furnace";
   give r "solar panel" // make this!
   ;
-  return r
+  pure r
 end
 
-def prep_provider_C
+def prep_provider_C 
   = \atLog. \atBranch. \atCopper. \atCounter.
   r <- build {
     wait 5;
@@ -196,7 +192,7 @@ def prep_provider_C
   give r "furnace";
   give r "solar panel" // make this!
   ;
-  return r
+  pure r
 end
 
 
@@ -209,7 +205,7 @@ end
 //   - workbench
 //   - branch predictor
 //   - logger
-def provide0
+def provide0 
   = \product.
   setname (fst product ++ " depot");
   snd product (
@@ -221,7 +217,7 @@ def provide0
   )
 end
 
-def provide1
+def provide1 
   = \buffer. \product. \ingr1.
   setname (fst product ++ " provider");
   forever {
@@ -231,14 +227,12 @@ def provide1
         place (fst product)
       }
     );
-    snd (snd ingr1) (
-      x (buffer * fst ingr1) (get (fst (snd ingr1)))
-    );
+    snd (snd ingr1) (x (buffer * fst ingr1) (get (fst (snd ingr1))));
     x buffer (make (fst product))
   }
 end
 
-def provide2
+def provide2 
   = \buffer. \product. \ingr1. \ingr2.
   setname (fst product ++ " provider");
   forever {
@@ -248,12 +242,8 @@ def provide2
         place (fst product)
       }
     );
-    snd (snd ingr1) (
-      x (buffer * fst ingr1) (get (fst (snd ingr1)))
-    );
-    snd (snd ingr2) (
-      x (buffer * fst ingr2) (get (fst (snd ingr2)))
-    );
+    snd (snd ingr1) (x (buffer * fst ingr1) (get (fst (snd ingr1))));
+    snd (snd ingr2) (x (buffer * fst ingr2) (get (fst (snd ingr2))));
     x buffer (make (fst product))
   }
 end
@@ -283,7 +273,7 @@ end
 //
 //   def atB0 = \c. atSW m2 m5 (uB c) end
 //   plantation "bit (0)" atB0
-def plantation: Text -> (Cmd Unit -> Cmd Unit) -> Cmd Unit
+def plantation: Text -> (Cmd Unit -> Cmd Unit) -> Cmd Unit 
   = \product. \there.
   depot <- build {provide0 (product, there)};
   harvester <- build {
@@ -298,17 +288,14 @@ def plantation: Text -> (Cmd Unit -> Cmd Unit) -> Cmd Unit
   give harvester product
 end
 
-def natural_plantation:
-    Text ->
-    (Cmd Unit -> Cmd Unit) ->
-    Cmd Unit
+def natural_plantation: Text -> (Cmd Unit -> Cmd Unit) -> Cmd Unit 
   = \product. \there.
   depot <- build {provide0 (product, there)};
   build {
     setname (product ++ " harvester");
     there (m1; tendbox right x4 x8 product depot)
   };
-  return ()
+  pure ()
 end
 
 
@@ -321,14 +308,10 @@ end
 //   - strange loop (3)
 //   - logger (3)
 //   - workbench
-def process_trees
+def process_trees 
   = \there.
-  log_depot <- build {
-    there (tR; m1; provide0 ("log", \c. c))
-  };
-  branch_depot <- build {
-    there (tR; m2; provide0 ("branch", \c. c))
-  };
+  log_depot <- build {there (tR; m1; provide0 ("log", \c. c))};
+  branch_depot <- build {there (tR; m2; provide0 ("branch", \c. c))};
   build {
     setname "tree processor";
     there (
@@ -356,8 +339,4 @@ end
 //   - logger (5)
 //   - workbench
 //   - harvester
-def tree_plantation
-  = \there.
-  plantation "tree" there;
-  process_trees there
-end
+def tree_plantation = \there. plantation "tree" there; process_trees there end

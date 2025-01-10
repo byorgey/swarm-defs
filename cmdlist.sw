@@ -4,9 +4,8 @@ def nil : List a = inl () end
 
 def cons : a -> List a -> List a = \a. \l. inr (a,l) end
 
-def sequence : List (Cmd a) -> Cmd (List a)
-sequence = \cmds.
+def sequence : List (Cmd a) -> Cmd (List a) = \cmds.
   case cmds
-    (\_. return nil)
-    (\c. a <- fst c; as <- sequence (snd c); return (cons a as))
+    (\_. pure nil)
+    (\c. a <- fst c; aa <- sequence (snd c); pure (cons a aa))
 end
