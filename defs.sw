@@ -272,6 +272,7 @@ def x61 = \c. c; x60 c end
 def x62 = \c. x31 c; x31 c end
 def x63 = \c. c; x62 c end
 def x64 = \c. x32 c; x32 c end
+def x100 = \c. x50 c; x50 c end
 def x128 = \c. x64 c; x64 c end
 def x256 = \c. x128 c; x128 c end
 def x512 = \c. x256 c; x256 c end
@@ -441,6 +442,16 @@ def grabbox = \d. \rep1. \rep2. doboxP grab d rep1 rep2 notempty end
 
 def drillbox = \d. \rep1. \rep2. doboxP (drill forward) d rep1 rep2 blocked end
 
+def flagLocation = x12 (m10; tB; m10; tL) end
+
+// Run this like   atXX (findbox right xM xN "quartz mine")  to search for a quartz mine
+// within an MxN box in context XX.  When it finds a mine it will move in a + pattern
+// around the location, which should be enough to visually locate the mine.  Be sure the
+// TPS is not too high.
+def findbox : Dir -> Rep -> Rep -> Text -> Cmd Unit =
+  \d. \rep1. \rep2. \thing.
+  doboxP flagLocation d rep1 rep2 (ishere thing)
+end
 
 // tend additionally requires strange loop
 // Usage example: tend "lambda" (atNE m5 m9)
@@ -558,9 +569,8 @@ def getProvided: Rep -> Text -> Cmd Unit
   atProvider thing (rep (get thing))
 end
 
-
 //////////////////////////////////////////////////
-// Depots
+// Depots + providers
 //////////////////////////////////////////////////
 /* A depot robot:
      1. Goes to the shingles row
@@ -569,9 +579,9 @@ end
      4. Sits next to it and provides the resource.
    The depot never tries to obtain more of the resource, it just
    assumes the resource will be given to it.  It also does a simple
-   'place' instead of 'place_atomic' (which requires XXX). Useful
-   earlier in the game for collecting basic resources, but have to
-   be careful you don't send several out at once.
+   'place' instead of 'place_atomic'. Useful earlier in the game for
+   collecting basic resources, but have to be careful you don't send
+   several out at once.
 */
 def depotHere: Text -> Cmd Unit
   = \thing.
@@ -584,8 +594,7 @@ def buildDepot: Ctx -> Text -> Cmd Actor
   = \atShingles. \thing.
   waitFor thing;
   depot <- build {
-    require "grabber" // make sure we get a grabber and not a harvester!
-    ;
+    require "grabber"; // make sure we get a grabber and not a harvester!
     waitFor thing;
     atShingles (
       until isempty {move};
@@ -599,6 +608,27 @@ def buildDepot: Ctx -> Text -> Cmd Actor
   pure depot
 end
 
+def provideHere : Text -> Cmd Unit -> Cmd Unit
+  = \thing. \more.
+  forever {
+    while (has thing) {waitWhile (ishere thing); placeAtomic thing};
+    returnFromProvider;
+    more;
+    findProvider thing;
+  }
+end
+
+// In the shingle context, provide a given entity, given a program for
+// acquiring/producing more (also in the shingle context).
+def provide : Text -> Cmd Unit -> Cmd Unit
+  = \thing. \more.
+  more;
+  until isempty {move};
+  place thing;
+  turn right;
+  move;
+  provideHere thing more
+end
 
 //////////////////////////////////////////////////
 // Delivery + farming
@@ -708,7 +738,6 @@ def buildMine: Ctx -> Ctx -> Actor -> Text -> Cmd Actor
   buildMiner atShingles atMine rockDepot depot ore
 end
 
-
 //////////////////////////////////////////////////
 // Bootstrapping
 //////////////////////////////////////////////////
@@ -726,9 +755,13 @@ def getHarvester: Cmd Unit =
   make "harvester"
 end
 
-def get5StrangeLoops: Cmd Unit =
+def ensureFurnace : Cmd Unit =
   hf <- has "furnace";
   if hf {} {getProvided x5 "rock"; make "furnace"};
+end
+
+def get5StrangeLoops: Cmd Unit =
+  ensureFurnace;
   getProvided x1 "copper ore";
   getProvided x1 "log";
   make "copper wire";
@@ -790,8 +823,7 @@ end
 // needs pull-based provider for silicon, with big furnace
 def getCircuit: Cmd Unit =
   getProvided x4 "silicon";
-  hf <- has "furnace";
-  if hf {} {getProvided x5 "rock"; make "furnace"};
+  ensureFurnace;
   getProvided x2 "copper ore";
   getProvided x2 "log";
   x2 (make "copper wire");
@@ -803,8 +835,7 @@ end
 
 def getGlass: Cmd Unit =
   require "drill";
-  hf <- has "furnace";
-  if hf {} {getProvided x5 "rock"; make "furnace"};
+  ensureFurnace;
   getProvided x1 "rock"; make "sand";
   make "glass"
 end
@@ -831,7 +862,6 @@ def getCamera: Cmd Unit =
 end
 
 def getScanner: Cmd Unit = getCamera; getCircuit; make "scanner" end
-
 
 ////////////////////////////////////////////////////////////
 // Utilities + specific steps for speedrun strategies
@@ -867,26 +897,6 @@ def makeD =
   x32 (make "wooden gear");
   make "small motor";
   make "drill"
-end
-
-
-// In case we drill out a quartz mine but don't note its location, since it looks
-// the same as a mountain tunnel.
-//
-// Run this like   atXX (findQuartzMines right xM xN)  to search for quartz mines
-// within an MxN box in context XX.  Will create a pattern of gears on the ground
-// in the adjacent MxN box in direction d corresponding to the locations of quartz mines.
-def findQuartzMines
-  = \d. \rows. \cols.
-  require 5 "wooden gear";
-  doboxP (
-    turn d;
-    rows move;
-    place "wooden gear";
-    tB;
-    rows move;
-    x3 (turn d)
-  ) d rows cols (ishere "quartz mine")
 end
 
 def getMithril: Ctx -> Ctx -> Cmd Unit
@@ -929,7 +939,7 @@ def step2: Cmd Unit =
   equip "branch predictor";
   x3 (make "board"; make "workbench");
   makeH;
-  log "Please grab 5 rocks, harvest more trees, >= 4 copper ore, then run step3"
+  log "Please grab >= 6 rocks, harvest more trees, >= 4 copper ore, then run step3"
 end
 
 def step3: Cmd Unit =
@@ -950,7 +960,7 @@ end
 // Prep for farms.  Gets 2 branch predictors + 1 harvester per farm.
 def prepFarms1: Ctx -> Rep -> Cmd Actor
   = \atShingles. \rep.
-  fetcher <- build {atShingles (rep (x2 getBranchPredictor; getHarvester))};
+  fetcher <- build {atShingles (rep (x2 getBranchPredictor; getHarvester)); say "Ready!"};
   pure fetcher
 end
 
@@ -983,9 +993,10 @@ def step5: Ctx -> Cmd Actor
         make "branch predictor" // for the rock depot + 3 mines
 
       )
-    )
+    );
+    say "Ready!"
   };
-  log "Please (1) salvage drill fetcher robot (2) ensure 7 strange loops (3) build rock depot (save reference) (4) drill mountains (5) define contexts for mines and run buildMine for each, (6) run step6 atShingles.";
+  log "Please (1) salvage drill fetcher robot (2) ensure 7 strange loops (3) build rock depot (save reference) (4) drill mountains (5) define contexts for mines (6) run step6 atShingles atCopper atIron atQuartz rockDepot.";
   pure fetcher
 end
 
@@ -998,14 +1009,113 @@ end
 def prepFarms2: Ctx -> Rep -> Cmd Actor
   = \atShingles. \rep.
   fetcher <- build {
-    atShingles (rep (x2 getBranchPredictor; getHarvester; get5StrangeLoops))
+    atShingles (rep (x2 getBranchPredictor; getHarvester; get5StrangeLoops));
+    say "Ready!"
   };
   pure fetcher
 end
 
-def step6: Ctx -> Cmd Unit
-  = \atShingles.
+def step6: Ctx -> Ctx -> Ctx -> Ctx -> Actor -> Cmd Unit
+  = \atShingles. \atCopper. \atIron. \atQuartz. \rockDepot.
+  buildMine atShingles atCopper rockDepot "copper ore";
+  buildMine atShingles atIron rockDepot "iron ore";
+  buildMine atShingles atQuartz rockDepot "quartz";
   prepFarms2 atShingles x1;
-  log "Please (1) salvage fetcher robot (2) get 2 LaTeX (3) build LaTeX farm (4) run step7"
+  log "Please (1) salvage fetcher robot (2) get 2 LaTeX (3) build LaTeX farm (4) run step7 atShingles"
 end // atNE, uL, etc.
  // x5, etc.
+
+def step7 : Ctx -> Cmd Unit
+  = \atShingles.
+  build {
+    require "furnace";
+    atShingles (
+      x4 getBranchPredictor;
+      getProvided x4 "LaTeX";
+      getProvided x4 "log";
+      x4 (make "rubber");
+      x2 get5StrangeLoops;
+      x4 (make "rubber band");
+
+      getProvided x1 "log"; make "board";
+      getProvided x8 "branch";
+      x4 (make "workbench");
+    );
+    say "Ready!"
+  };
+  log "Please (1) salvage fetcher bot (2) run step8 atShingles"
+end
+
+def buildSandProvider : Ctx -> Cmd Actor
+  = \atShingles.
+  build {
+    require "drill";
+    atShingles (
+      provide "sand" (getProvided x8 "rock"; x8 (make "sand"))
+    )
+  }
+end
+
+def buildGlassProvider : Ctx -> Cmd Actor
+  = \atShingles.
+  build {
+    atShingles (
+      getProvided x5 "rock"; make "furnace";
+      provide "glass" (getProvided x4 "sand"; x4 (make "glass"))
+    )
+  }
+end
+
+def buildSolarPanelProvider : Ctx -> Cmd Actor
+  = \atShingles.
+  build {
+    log "Making solar panels...";
+    require "3D printer";
+    atShingles (
+      ensureFurnace;
+      provide "solar panel" (
+        getProvided x5 "glass";
+        getProvided x4 "copper ore";
+        getProvided x4 "log";
+        x4 (make "copper wire");
+        x5 (make "solar panel");
+      )
+    )
+  }
+end
+
+def buildSiliconProvider : Ctx -> Cmd Actor
+  = \atShingles.
+  build {
+    atShingles (
+      getProvided x100 "rock";
+      getProvided x10 "solar panel";
+      make "big furnace";
+      provide "silicon" (getProvided x16 "quartz"; x4 (make "silicon"))
+    )
+  }
+end
+
+def step8 : Ctx -> Cmd Actor
+  = \atShingles.
+  log "Once sand provider is ready, run step9 atShingles.";
+  buildSandProvider atShingles;
+end
+
+def step9 : Ctx -> Cmd Actor
+  = \atShingles.
+  log "Once glass provider is ready, run step10 atShingles.";
+  buildGlassProvider atShingles;
+end
+
+def step10 : Ctx -> Cmd Actor
+  = \atShingles.
+  log "Once solar panel provider is ready, run step11 atShingles.";
+  buildSolarPanelProvider atShingles;
+end
+
+def step11 : Ctx -> Cmd Actor
+  = \atShingles.
+  log "Building silicon provider...";
+  buildSiliconProvider atShingles;
+end

@@ -36,8 +36,39 @@
   - makeD (make four: copper, iron, quartz, keep one to clear boulders)
 - Now send robot(s) to drill out mountains, identify some mines
   - Create copper, iron, quartz ore depots, start mining & delivering
+  - Make silicon provider
 - Get some LaTeX, start LaTeX farm, create LaTeX depot
 
+- ADT calculator
+  - calculator
+    - [1, counter]
+      - [1, flash memory]
+        - [8, bit (0)]
+        - [8, bit (1)]
+      - [8, wooden gear]
+    - [1, solar panel]
+      - [1, glass]
+        - sand
+        - (big furnace)
+      - [8, copper wire]
+      - (3D printer)
+  - typewriter
+    - circuit
+      - [4, silicon]
+      - strange loop
+      - [16, copper wire]
+      - [8, bit (0)]
+      - [8, bit (1)]
+    - board
+    - 8 wooden gear
+  - I/O cable
+    - 8 copper wire
+    - rubber
+- hyperloop = ADT calculator + strange loop
+
+
+
+-- XXX below is outdated but maybe still useful
 - Make bootstrap providers:
   - copper wire (need to give it a furnace)
   - strange loop
@@ -78,7 +109,21 @@
 
 - Now start building up tech tree based on iron.
 
+- How to find a quartz mine?  We can tell if we got one if we got some
+  quartz, but can't tell visually which one it is!
+    - Printing the coordinates on paper and handing it to the base
+      would make sense, but making a typewriter requires a circuit
+      which requires silicon which requires quartz!
 
+    - How about this: make robot go looking for it; when it finds one,
+      have it go back + forth in a + pattern a few times, with arms
+      extending far enough out that we will be able to see it even if
+      some spots are in tunnels + thus invisible
+
+    - Another idea is to do a binary search: send robots to search a
+      specific rectangular area and return true/false whether the area
+      contains a quartz mine (or anything else) at all, keep
+      subdividing
 
 
 - Make 5 loggers and one harvester
