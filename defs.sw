@@ -829,32 +829,39 @@ def getCircuit: Cmd Unit =
   x2 (make "copper wire");
   make "strange loop";
   getProvided x8 "bit (0)";
-  getProvided x8 "bit (1)"
+  getProvided x8 "bit (1)";
+  make "circuit"
 end
 
+def getCalculator: Cmd Unit = getCounter; getProvided x1 "solar panel"; make "calculator" end
 
-def getGlass: Cmd Unit =
-  require "drill";
-  ensureFurnace;
-  getProvided x1 "rock"; make "sand";
-  make "glass"
+def getTypewriter =
+  getCircuit;
+  getProvided x5 "log";
+  x5 (make "board");
+  x8 (make "wooden gear");
+  make "typewriter"
 end
 
-def getSolarPanel: Cmd Unit =
-  require "3D printer";
-  getGlass;
+def getIOCable =
+  require "furnace";
   getProvided x1 "copper ore";
-  getProvided x1 "log";
-  x1 (make "copper wire");
-  make "solar panel"
+  getProvided x2 "log";
+  make "copper wire";
+  getProvided x1 "LaTeX";
+  make "rubber";
+  make "I/O cable";
 end
 
-def getCalculator: Cmd Unit = getCounter; getSolarPanel; make "calculator" end
+def getADTCalculator = getCalculator; getTypewriter; getIOCable; make "ADT calculator" end
 
+def getHyperloop =
+  getCalculator; get5StrangeLoops; make "hyperloop"
+end
 
 // Needs pixel farm/providers
 def getCamera: Cmd Unit =
-  getGlass;
+  getProvided x1 "glass";
   getProvided x10 "pixel (R)";
   getProvided x10 "pixel (G)";
   getProvided x10 "pixel (B)";
