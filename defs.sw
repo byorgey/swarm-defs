@@ -971,11 +971,14 @@ def step4: Ctx -> Ctx -> Cmd Unit
   x2 (make "rubber"; make "rubber band");
   buildTreeProcess atShingles;
   prepFarms1 atShingles x2;
-  log "Please (1) salvage fetcher bot (2) ensure >= 4 strange loops (3) get two of each bit and start bit farms (4) ensure 24 copper wire, then run step5 atShingles."
+  log "Please (1) get two of each bit (2) define bit farm contexts (3) ensure 24 copper wire (3) salvage fetcher bot (4) run step5 atShingles at0 at1."
 end
 
-def step5: Ctx -> Cmd Actor
-  = \atShingles.
+def step5: Ctx -> Ctx -> Ctx -> Cmd Actor
+  = \atShingles. \at0. \at1.
+  log "Starting bit farms...";
+  buildStdFarm atShingles at0 "bit (0)"; wait 2;
+  buildStdFarm atShingles at1 "bit (1)";
   log "Obtaining devices and materials for mining operations...";
   fetcher <- build {
     require 24 "copper wire";
@@ -996,7 +999,7 @@ def step5: Ctx -> Cmd Actor
     );
     say "Ready!"
   };
-  log "Please (1) salvage drill fetcher robot (2) ensure 7 strange loops (3) build rock depot (save reference) (4) drill mountains (5) define contexts for mines (6) run step6 atShingles atCopper atIron atQuartz rockDepot.";
+  log "Please (1) build rock depot (save reference) (2) salvage drill fetcher robot (3) drill mountains (4) define contexts for mines (5) run step6 atShingles atCopper atIron atQuartz rockDepot.";
   pure fetcher
 end
 
@@ -1017,11 +1020,16 @@ end
 
 def step6: Ctx -> Ctx -> Ctx -> Ctx -> Actor -> Cmd Unit
   = \atShingles. \atCopper. \atIron. \atQuartz. \rockDepot.
-  buildMine atShingles atCopper rockDepot "copper ore";
-  buildMine atShingles atIron rockDepot "iron ore";
-  buildMine atShingles atQuartz rockDepot "quartz";
-  prepFarms2 atShingles x1;
-  log "Please (1) salvage fetcher robot (2) get 2 LaTeX (3) build LaTeX farm (4) run step7 atShingles"
+  hc <- has "copper ore";
+  hi <- has "iron ore";
+  hq <- has "quartz";
+  if (hc && hi && hq) {
+    buildMine atShingles atCopper rockDepot "copper ore";
+    buildMine atShingles atIron rockDepot "iron ore";
+    buildMine atShingles atQuartz rockDepot "quartz";
+    prepFarms2 atShingles x1;
+    log "Please (1) salvage fetcher robot (2) get 2 LaTeX (3) build LaTeX farm (4) run step7 atShingles"
+  } { log "Please obtain one copper ore, one iron ore, and one quartz first!" }
 end // atNE, uL, etc.
  // x5, etc.
 
