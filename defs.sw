@@ -354,6 +354,11 @@ def waitFor = \thing. until (has thing) {wait 4} end
 def notempty: Cmd Bool = e <- isempty; pure $ if e {false} {true} end
 
 
+// match + case
+def λmatch : (a -> b -> r) -> (a * b) -> r = \f. \p. match p f end
+def λcase : (a -> r) -> (b -> r) -> (a + b) -> r = \f. \g. \s. case s f g end
+
+
 ////////////////////////////////////////////////////////////
 // Movement
 ////////////////////////////////////////////////////////////
@@ -372,9 +377,10 @@ def moveByN: Int -> Int -> Cmd Unit
 end
 
 def moveToN: (Int * Int) -> Cmd Unit
-  = \tgt.
-  loc <- whereami;
-  let dx = fst tgt - fst loc in let dy = snd tgt - snd loc in moveByN dx dy
+  = λmatch \tgtX. \tgtY.
+    loc <- whereami;
+    match loc \locX. \locY.
+    let dx = tgtX - locX in let dy = tgtY - locY in moveByN dx dy
 end
 
 
@@ -388,9 +394,10 @@ def moveBy: Int -> Int -> Cmd Unit
 end
 
 def moveTo: (Int * Int) -> Cmd Unit
-  = \tgt.
-  loc <- whereami;
-  let dx = fst tgt - fst loc in let dy = snd tgt - snd loc in moveBy dx dy
+  = λmatch \tgtX. \tgtY.
+    loc <- whereami;
+    match loc \locX. \locY.
+    let dx = tgtX - locX in let dy = tgtY - locY in moveBy dx dy
 end
 
 def excursion: Cmd Unit -> Cmd Unit
@@ -890,7 +897,7 @@ def grabrow = \x. x (grab; m1); tB; x m1; tB end
 def plantrow = \x. \thing. x (m1; place thing; harvest; pure ()); tB; x m1; tB
 end
 
-def lambdas = \d. build {require 1 "lambda"; turn d; plantrow x4 "lambda"} end
+def lambdas = \d. build {stock 1 "lambda"; turn d; plantrow x4 "lambda"} end
 
 def get_lambdas
   = \d.
@@ -988,7 +995,7 @@ def step5: Ctx -> Ctx -> Ctx -> Cmd Actor
   buildStdFarm atShingles at1 "bit (1)";
   log "Obtaining devices and materials for mining operations...";
   fetcher <- build {
-    require 24 "copper wire";
+    stock 24 "copper wire";
     atShingles (
       getProvided x4 "bit (0)";
       getProvided x4 "bit (1)";
