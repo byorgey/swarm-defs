@@ -1091,7 +1091,6 @@ end
 def buildSolarPanelProvider : Ctx -> Cmd Actor
   = \atShingles.
   build {
-    log "Making solar panels...";
     require "3D printer";
     atShingles (
       ensureFurnace;
