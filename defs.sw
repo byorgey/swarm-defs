@@ -478,12 +478,12 @@ end
 ////////////////////////////////////////////////////////////
 def placeAtomic: Text -> Cmd Bool
   = \product.
-  atomic (here <- isempty; if here {place product; pure true} {pure false})
+  atomic {here <- isempty; if here {place product; pure true} {pure false}}
 end
 
 def grabAtomic: Text -> Cmd Bool
   = \thing.
-  atomic (b <- ishere thing; if b {grab; pure true} {pure false})
+  atomic {b <- ishere thing; if b {grab; pure true} {pure false}}
 end
 
 def get: Text -> Cmd Unit = \thing. waitUntil (grabAtomic thing) end
@@ -877,6 +877,24 @@ end
 
 def getScanner: Cmd Unit = getCamera; getCircuit; make "scanner" end
 
+def getGrabber: Cmd Unit =
+  getProvided x1 "copper ore";
+  getProvided x3 "log";
+  getProvided x5 "rock"; make "furnace";
+  make "copper pipe";
+  getProvided x1 "iron ore";
+  make "iron plate";
+  make "iron gear";
+  // get water!!
+  // get small motor!!
+end
+    // - [2, copper pipe]
+    // - [2, iron gear]
+    // - [1, iron plate]
+    // - [1, water]
+    // - [1, small motor]
+
+
 ////////////////////////////////////////////////////////////
 // Utilities + specific steps for speedrun strategies
 ////////////////////////////////////////////////////////////
@@ -1049,6 +1067,7 @@ end // atNE, uL, etc.
 
 def step7 : Ctx -> Cmd Unit
   = \atShingles.
+  log "Fetching rubber bands and workbenches...";
   build {
     require "furnace";
     atShingles (
@@ -1138,5 +1157,7 @@ end
 def step11 : Ctx -> Cmd Actor
   = \atShingles.
   log "Building silicon provider...";
-  buildSiliconProvider atShingles;
+  provider <- buildSiliconProvider atShingles;
+  log "Use prepFarms2 x5 and buildStdFarm for cotton, parsley, R, G, B.";
+  pure provider
 end
