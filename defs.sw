@@ -27,7 +27,7 @@ def sA = sL; sR; sF; sB; sD end
 def slv = salvage end
 
 // m0 - m64, without devices
-def m0 = noop end
+def m0 = pure () end
 def m1 = move end
 def m2 = m1; m1 end
 def m3 = m1; m2 end
@@ -207,7 +207,7 @@ def scanWS = \x. \y. atWS x y sA end
 // Simple repetition
 ////////////////////////////////////////////////////////////
 // Simple repetition using only lambda
-def x0 = \_. noop end
+def x0 = \_. pure () end
 def x1 = \c. c end
 def x2 = \c. c; c end
 def x3 = \c. c; x2 c end
