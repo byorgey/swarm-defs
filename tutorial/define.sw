@@ -1,0 +1,9 @@
+def m2 = move; move end
+def m4 = m2; m2 end
+def m16 = m4; m4; m4; m4 end
+def tL = turn left end
+def tR = turn right end
+def ll = tL; m2; tL end
+def rr = tR; m2; tR end
+def s = m16; ll; m16; rr; m16 end
+def solution = build {tR; s; f <- grab; turn back; s; give base f} end

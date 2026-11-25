@@ -1,1 +1,1 @@
-def x : Int = 3 end
+def x : Int = "hi" end

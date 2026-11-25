@@ -45,3 +45,5 @@ def solve =
   move;
   grab
 end
+
+solve

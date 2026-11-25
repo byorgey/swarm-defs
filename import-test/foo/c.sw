@@ -1,2 +1,1 @@
 import "d"
-import "../a"

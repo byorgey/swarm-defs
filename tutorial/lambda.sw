@@ -1,0 +1,13 @@
+def x2 = \c. c;c end
+def x4 = \c. x2 (x2 c) end
+def m2 = x2 move end
+def m4 = x4 move end
+def m6 = m2; m4 end
+def m16 = x4 m4 end
+def tL = turn left end
+def tR = turn right end
+def ll = tL; x2 move; tL end
+def rr = tR; x2 move; tR end
+def s = m4; ll; m4; rr end
+def col = x4 s; m6; tR; m16; tL; m2 end
+def sol = tR; x4 col; grab end
